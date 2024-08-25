@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Graphs</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+</head>
+
+<body>
+  <div id="graph1"><canvas></canvas></div>
+  <div id="graph2"><canvas></canvas></div>
+  <div id="graph3"><canvas></canvas></div>
+  <div id="graph4"><canvas></canvas></div>
+  <div id="graph5"><canvas></canvas></div>
+  <button onclick="toggleAutoRefresh()">Toggle Auto Refresh</button>
+  
+  <script>
+    let autoRefreshInterval;
+    let autoRefreshEnabled = true;
+
+    const tableData = JSON.parse(localStorage.getItem("tableData"));
+    // if (!tableData) return;
+
+    const timestamps = [];
+    const T1data = [], T2data = [], T3data = [], T4data = [], T5data = [];
+    const TMdata = [], RHdata = [], FLOWdata = [], NOISEdata = [];
+
+    // Select only the last 100 data points
+    const last100Data = tableData.slice(-100);
+
+    last100Data.forEach(datapoint => {
+      timestamps.push(datapoint.timestamp);
+      T1data.push(datapoint.T1);
+      T2data.push(datapoint.T2);
+      T3data.push(datapoint.T3);
+      T4data.push(datapoint.T4);
+      T5data.push(datapoint.T5);
+      TMdata.push(datapoint.TM);
+      RHdata.push(datapoint.RH);
+      FLOWdata.push(datapoint.FLOW);
+      NOISEdata.push(datapoint.NOISE);
+    });
+
+    const chart1Ctx = document.getElementById('graph1').querySelector('canvas').getContext('2d');
+    const chart1 = new Chart(chart1Ctx, {
+      type: 'line',
+      data: {
+        labels: timestamps,
+        datasets: [{
+          label: 'T1',
+          borderColor: 'red',
+          fill: false,
+          data: T1data.map((value, index) => ({ x: timestamps[index], y: value }))
+        }, {
+          label: 'T2',
+          borderColor: 'blue',
+          fill: false,
+          data: T2data.map((value, index) => ({ x: timestamps[index], y: value }))
+        }, {
+          label: 'T3',
+          borderColor: 'green',
+          fill: false,
+          data: T3data.map((value, index) => ({ x: timestamps[index], y: value }))
+        }, {
+          label: 'T4',
+          borderColor: 'orange',
+          fill: false,
+          data: T4data.map((value, index) => ({ x: timestamps[index], y: value }))
+        }, {
+          label: 'T5',
+          borderColor: 'purple',
+          fill: false,
+          data: T5data.map((value, index) => ({ x: timestamps[index], y: value }))
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day', // Adjust as needed
+            },
+          },
+          y: {
+            beginAtZero: true,
+          }
+        }
+      }
+    });
+
+    const chart2Ctx = document.getElementById('graph2').querySelector('canvas').getContext('2d');
+    const chart2 = new Chart(chart2Ctx, {
+      type: 'line',
+      data: {
+        labels: timestamps,
+        datasets: [{
+          label: 'Temperature Matras Data',
+          data: TMdata,
+          borderColor: 'blue',
+          fill: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day', // Adjust as needed
+            },
+          },
+          y: {
+            beginAtZero: true,
+          }
+        }
+      }
+    });
+
+    const chart3Ctx = document.getElementById('graph3').querySelector('canvas').getContext('2d');
+    const chart3 = new Chart(chart3Ctx, {
+      type: 'line',
+      data: {
+        labels: timestamps,
+        datasets: [{
+          label: 'Humidity Data',
+          data: RHdata,
+          borderColor: 'green',
+          fill: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day', // Adjust as needed
+            },
+          },
+          y: {
+            beginAtZero: true,
+          }
+        }
+      }
+    });
+
+    const chart4Ctx = document.getElementById('graph4').querySelector('canvas').getContext('2d');
+    const chart4 = new Chart(chart4Ctx, {
+      type: 'line',
+      data: {
+        labels: timestamps,
+        datasets: [{
+          label: 'Airflow Data',
+          data: FLOWdata,
+          borderColor: 'orange',
+          fill: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day', // Adjust as needed
+            },
+          },
+          y: {
+            beginAtZero: true,
+          }
+        }
+      }
+    });
+
+    const chart5Ctx = document.getElementById('graph5').querySelector('canvas').getContext('2d');
+    const chart5 = new Chart(chart5Ctx, {
+      type: 'line',
+      data: {
+        labels: timestamps,
+        datasets: [{
+          label: 'Noise Data',
+          data: NOISEdata,
+          borderColor: 'purple',
+          fill: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day', // Adjust as needed
+            },
+          },
+          y: {
+            beginAtZero: true,
+          }
+        }
+      }
+    });
+
+    function updateData() {
+      const tableData = JSON.parse(localStorage.getItem("tableData"));
+      // Select only the last 100 data points
+      const last100Data = tableData.slice(-100);
+
+      timestamps.length = 0;
+      T1data.length = 0;
+      T2data.length = 0;
+      T3data.length = 0;
+      T4data.length = 0;
+      T5data.length = 0;
+      TMdata.length = 0;
+      RHdata.length = 0;
+      FLOWdata.length = 0;
+      NOISEdata.length = 0;
+
+      last100Data.forEach(datapoint => {
+        timestamps.push(datapoint.timestamp);
+        T1data.push(datapoint.T1);
+        T2data.push(datapoint.T2);
+        T3data.push(datapoint.T3);
+        T4data.push(datapoint.T4);
+        T5data.push(datapoint.T5);
+        TMdata.push(datapoint.TM);
+        RHdata.push(datapoint.RH);
+        FLOWdata.push(datapoint.FLOW);
+        NOISEdata.push(datapoint.NOISE);
+      });
+
+      // Update chart data
+      chart1.data.labels = timestamps;
+      chart1.data.datasets[0].data = T1data.map((value, index) => ({ x: timestamps[index], y: value }));
+      chart1.data.datasets[1].data = T2data.map((value, index) => ({ x: timestamps[index], y: value }));
+      chart1.data.datasets[2].data = T3data.map((value, index) => ({ x: timestamps[index], y: value }));
+      chart1.data.datasets[3].data = T4data.map((value, index) => ({ x: timestamps[index], y: value }));
+      chart1.data.datasets[4].data = T5data.map((value, index) => ({ x: timestamps[index], y: value }));
+      chart1.update();
+
+      chart2.data.labels = timestamps;
+      chart2.data.datasets[0].data = TMdata.map((value, index) => ({ x: timestamps[index], y: value }));
+      chart2.update();
+
+      chart3.data.labels = timestamps;
+      chart3.data.datasets[0].data = RHdata.map((value, index) => ({ x: timestamps[index], y: value }));
+      chart3.update();
+
+      chart4.data.labels = timestamps;
+      chart4.data.datasets[0].data = FLOWdata.map((value, index) => ({ x: timestamps[index], y: value }));
+      chart4.update();
+
+      chart5.data.labels = timestamps;
+      chart5.data.datasets[0].data = NOISEdata.map((value, index) => ({ x: timestamps[index], y: value }));
+      chart5.update();
+    }
+
+    function toggleAutoRefresh() {
+      if (autoRefreshEnabled) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshEnabled = false;
+      } else {
+        autoRefreshInterval = setInterval(updateData, 1000); // Refresh every 1 second
+        autoRefreshEnabled = true;
+      }
+    }
+
+    autoRefreshInterval = setInterval(updateData, 1000); // Refresh every 1 second
+  </script>
+</body>
+
+</html>
