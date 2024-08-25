@@ -157,27 +157,6 @@
         displayTimer();
     }, 1000);
 }
-
-    function displaySaveDataIntervalTimer() {
-    const hours = Math.floor(saveDataIntervalTimerSeconds / 3600);
-    const minutes = Math.floor((saveDataIntervalTimerSeconds % 3600) / 60);
-    const seconds = saveDataIntervalTimerSeconds % 60;
-    saveDataIntervalTimerDisplay.textContent = `Interval: ${hours
-      .toString()
-      .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
-        .toString()
-        .padStart(2, "0")}`;
-} else {
-      saveDataIntervalTimerDisplay.textContent = "Interval: 00:00:00";
-    }
-
-    function startSaveDataIntervalTimer() {
-    saveDataIntervalTimer = setInterval(function () {
-        saveDataIntervalTimerSeconds++;
-        displaySaveDataIntervalTimer(); // Memperbarui tampilan interval
-        saveData();
-    }, saveDataInterval * 1000);
-}
     
     function displayTimer() {
     if (timerSeconds >= 0) {
@@ -524,21 +503,21 @@ function updateDisplay(data) {
       });
 
     document
-    .getElementById("resetBtn").addEventListener("click", function () {
-    clearInterval(timerInterval);
-    clearInterval(saveDataIntervalTimer);
+    document.getElementById("resetBtn").addEventListener("click", function () {
+    clearInterval(timerInterval); // Menghentikan interval timer utama
+    clearInterval(saveDataIntervalTimer); // Menghentikan interval penyimpanan data
 
-    timerSeconds = 0;
-    saveDataIntervalTimerSeconds = 0; // Mengatur ulang waktu interval
-    displayTimer();
-    displaySaveDataIntervalTimer(); // Menampilkan interval yang direset
+    timerSeconds = 0; // Mengatur ulang waktu
+    saveDataIntervalTimerSeconds = 0; // Mengatur ulang interval penyimpanan
+    displayTimer(); // Menampilkan timer yang direset
 
-    savingData = false;
-    tableData = [];
+    savingData = false; // Menghentikan proses penyimpanan data
+    tableData = []; // Mengosongkan tabel data yang tersimpan
 
-    displayTable();
-    document.getElementById("toggleBtn").textContent = "Start Saving Data";
+    displayTable(); // Menampilkan tabel yang sudah direset
+    document.getElementById("toggleBtn").textContent = "Start Saving Data"; // Mengatur ulang tombol mulai
 });
+
 
 
       // .getElementById("resetBtn")
