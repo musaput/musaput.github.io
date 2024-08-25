@@ -1,91 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Timer and Interval</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MQTT Data Display</title>
     <style>
-        #timerIntervalContainer {
-            display: flex;
-            justify-content: space-between;
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 10px;
             margin-top: 20px;
+        }
+
+        .data-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* Style for custom file input button */
+        #importBtn {
+            display: none;
+            /* Hide the default file input */
+        }
+
+        .import-button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .button-custom {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Additional styles for file input button */
+        .import-button:active,
+        .import-button:focus {
+            outline: none;
+            box-shadow: none;
         }
 
         #timerDisplay,
         #intervalDisplay {
-            font-size: 1.2em;
-        }
-
-        .data-item {
-            margin-bottom: 5px;
-        }
-
-        #dataTable {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        #dataTable th, #dataTable td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-
-        #dataTable th {
-            background-color: #f4f4f4;
-        }
-
-        #controls {
-            margin-top: 20px;
+            margin-right: 20px;
         }
     </style>
 </head>
+
 <body>
-    <div id="controls">
-        <input type="text" id="timerInput" placeholder="HH:MM:SS">
-        <input type="text" id="intervalInput" placeholder="Interval (seconds)">
-        <button id="toggleBtn">Start Saving Data</button>
-        <button id="resetBtn">Reset</button>
-    </div>
-    
-    <div id="timerIntervalContainer">
-        <div id="timerDisplay">Timer: 00:00:00</div>
-        <div id="intervalDisplay">Interval: 00:00:00</div>
-    </div>
-
-    <div id="dataDisplay">
-        <div class="data-item" data-label="T1"></div>
-        <div class="data-item" data-label="T2"></div>
-        <div class="data-item" data-label="T3"></div>
-        <div class="data-item" data-label="T4"></div>
-        <div class="data-item" data-label="T5"></div>
-        <div class="data-item" data-label="TM"></div>
-        <div class="data-item" data-label="RH"></div>
-        <div class="data-item" data-label="FLOW"></div>
-        <div class="data-item" data-label="NOISE"></div>
-    </div>
-
-    <table id="dataTable">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>T1</th>
-                <th>T2</th>
-                <th>T3</th>
-                <th>T4</th>
-                <th>T5</th>
-                <th>TM</th>
-                <th>RH</th>
-                <th>FLOW</th>
-                <th>NOISE</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <div>
+        <h1>INCUBATOR ANALYZER</h1>
+        <button id="toggleBtn" class="button-custom">Start Saving Data</button>
+        <button id="resetBtn" class="button-custom">Reset Data</button>
+        <button id="exportBtn" class="button-custom">Export Data</button>
+        <input type="file" id="importBtn" accept=".csv" class="import-button" />
+        <label for="importBtn" class="import-button">Import Data</label>
+        <label for="intervalInput">Set Interval (seconds):</label>
+        <input type="text" id="intervalInput" placeholder="30" />
+        <label for="timerInput">Set Timer (hh:mm:ss):</label>
+        <input type="text" id="timerInput" placeholder="00:05:00" />
+        <div id="timerDisplay">Timer: 00:00:00</div>
+        <label for="intervalDisplay">Interval Timer:</label>
+        <div id="intervalDisplay">00:00:00</div>
+        <div class="grid-container" id="dataGrid">
+            <!-- Data items will be displayed here -->
+            <div class="data-item" data-label="T1">T1 = 0 °C</div>
+            <div class="data-item" data-label="T2">T2 = 0 °C</div>
+            <div class="data-item" data-label="T3">T3 = 0 °C</div>
+            <div class="data-item" data-label="T4">T4 = 0 °C</div>
+            <div class="data-item" data-label="T5">T5 = 0 °C</div>
+            <div class="data-item" data-label="TM">TM = 0 °C</div>
+            <div class="data-item" data-label="RH">RH = 0 %</div>
+            <div class="data-item" data-label="FLOW">FLOW = 0 m/s</div>
+            <div class="data-item" data-label="NOISE">NOISE = 0 dB</div>
+        </div>
+        <br />
+        <h2>Saved Data Table</h2>
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>T1</th>
+                    <th>T2</th>
+                    <th>T3</th>
+                    <th>T4</th>
+                    <th>T5</th>
+                    <th>TM</th>
+                    <th>RH</th>
+                    <th>FLOW</th>
+                    <th>NOISE</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Saved data will be displayed here -->
+            </tbody>
+        </table>
+    </div>
     <script>
         const topic = "esp32/bismillah";
         let savingData = false;
@@ -96,21 +133,42 @@
         let hasSaved = false;
         let timerInterval;
         let timerSeconds = 0;
+        let intervalSeconds = 0;
 
         const timerDisplay = document.getElementById("timerDisplay");
         const intervalDisplay = document.getElementById("intervalDisplay");
+
+        function startIntervalTimer() {
+            intervalSeconds = saveDataInterval * 1000; // Convert interval to milliseconds
+
+            setInterval(() => {
+                if (intervalSeconds > 0) {
+                    intervalSeconds -= 1000; // Decrease by 1 second
+                    displayInterval();
+                }
+            }, 1000);
+        }
+
+        function displayInterval() {
+            const hours = Math.floor(intervalSeconds / 3600000);
+            const minutes = Math.floor((intervalSeconds % 3600000) / 60000);
+            const seconds = Math.floor((intervalSeconds % 60000) / 1000);
+            intervalDisplay.textContent = 
+                `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+        }
 
         function startTimer() {
             const input = document.getElementById("timerInput").value;
             const [hours, minutes, seconds] = input.split(":").map(Number);
             timerSeconds = hours * 3600 + minutes * 60 + seconds;
 
-            saveDataInterval = parseInt(document.getElementById("intervalInput").value, 10) || 0;
+            saveDataInterval = document.getElementById("intervalInput").value || 0;
+            
+            startIntervalTimer(); // Start the interval timer
 
             saveDataIntervalTimer = setInterval(() => {
                 hasSaved = false;
                 saveDataIntervalTimerSeconds++;
-                updateIntervalDisplay();
             }, 1000);
 
             timerInterval = setInterval(() => {
@@ -119,7 +177,8 @@
                     clearInterval(timerInterval);
                     clearInterval(saveDataIntervalTimer);
                     savingData = false;
-                    document.getElementById("toggleBtn").textContent = "Start Saving Data";
+                    document.getElementById("toggleBtn").textContent =
+                        "Start Saving Data";
                 }
                 displayTimer();
             }, 1000);
@@ -130,18 +189,14 @@
                 const hours = Math.floor(timerSeconds / 3600);
                 const minutes = Math.floor((timerSeconds % 3600) / 60);
                 const seconds = timerSeconds % 60;
-                timerDisplay.textContent = `Timer: ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+                timerDisplay.textContent = `Timer: ${hours
+                    .toString()
+                    .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
+                        .toString()
+                        .padStart(2, "0")}`;
             } else {
                 timerDisplay.textContent = "Timer: 00:00:00";
             }
-        }
-
-        function updateIntervalDisplay() {
-            const intervalSeconds = saveDataIntervalTimerSeconds % saveDataInterval;
-            const hours = Math.floor(intervalSeconds / 3600);
-            const minutes = Math.floor((intervalSeconds % 3600) / 60);
-            const seconds = intervalSeconds % 60;
-            intervalDisplay.textContent = `Interval: ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
         }
 
         function updateDisplay(data) {
@@ -158,7 +213,7 @@
                 hour: 'numeric',
                 minute: 'numeric',
                 second: 'numeric',
-                hour12: false,
+                hour12: false, // Use 24-hour format
             };
 
             let newData = { timestamp: new Date().toLocaleString('en-US', options) };
@@ -189,7 +244,9 @@
                         break;
                 }
 
-                const dataItem = document.querySelector(`.data-item[data-label="${label}"]`);
+                const dataItem = document.querySelector(
+                    `.data-item[data-label="${label}"]`
+                );
                 if (dataItem) {
                     dataItem.textContent = `${label} = ${value} ${unit}`;
                 }
@@ -199,136 +256,115 @@
                 }
             });
 
+            console.log(newData)
+
             if (savingData) {
-                if (saveDataInterval == 0) {
-                    tableData.push(newData);
-                    displayTable();
-                } else if (saveDataIntervalTimerSeconds % saveDataInterval == 0 && hasSaved == false) {
-                    hasSaved = true;
-                    tableData.push(newData);
-                    displayTable();
+                tableData.push(newData);
+                if (tableData.length > 10) {
+                    tableData.shift(); // Remove the oldest data if more than 10 items
+                }
+
+                const row = tableTableBody.insertRow();
+                for (const key in newData) {
+                    const cell = row.insertCell();
+                    cell.textContent = newData[key];
                 }
             }
         }
-
-        function displayTable() {
-            const dataTableBody = document.querySelector("#dataTable tbody");
-            dataTableBody.innerHTML = "";
-            tableData.forEach((data) => {
-                const row = document.createElement("tr");
-
-                const options = {
-                    day: 'numeric',
-                    month: 'numeric',
-                    year: 'numeric',
-                    hour: 'numeric',
-                    minute: 'numeric',
-                    second: 'numeric',
-                    hour12: false
-                };
-
-                const timestamp = new Date(data.timestamp).toLocaleDateString("en-US", options).toString().split(', ');
-                const date = timestamp[0];
-                const time = timestamp[1];
-
-                const dateCell = document.createElement("td");
-                const timeCell = document.createElement("td");
-                dateCell.textContent = date;
-                timeCell.textContent = time;
-
-                row.appendChild(dateCell);
-                row.appendChild(timeCell);
-
-                for (const key in data) {
-                    if (key !== "timestamp") {
-                        const cell = document.createElement("td");
-                        cell.textContent = data[key];
-                        row.appendChild(cell);
-                    }
-                }
-
-                dataTableBody.appendChild(row);
-            });
-
-            localStorage.setItem("tableData", JSON.stringify(tableData));
-        }
-
-        window.onload = function () {
-            const storedData = localStorage.getItem("tableData");
-            if (storedData) {
-                tableData = JSON.parse(storedData);
-                displayTable();
-            }
-        };
-
-        const clientId = "mqttjs_" + Math.random().toString(16).substr(2, 8);
-        const host = "wss://broker.emqx.io:8084/mqtt";
-        const options = {
-            keepalive: 60,
-            clientId: clientId,
-        };
-
-        const client = mqtt.connect(host, options);
-
-        client.on("connect", () => {
-            client.subscribe(topic, (err) => {
-                if (err) {
-                    console.error("Subscription error:", err);
-                }
-            });
-        });
-
-        client.on("message", (topic, message) => {
-            const dataString = message.toString();
-            updateDisplay(dataString);
-        });
 
         document.getElementById("toggleBtn").addEventListener("click", () => {
+            savingData = !savingData;
+            document.getElementById("toggleBtn").textContent = savingData
+                ? "Stop Saving Data"
+                : "Start Saving Data";
+
             if (savingData) {
-                savingData = false;
-                document.getElementById("toggleBtn").textContent = "Start Saving Data";
+                startTimer();
+            } else {
                 clearInterval(timerInterval);
                 clearInterval(saveDataIntervalTimer);
-                saveDataIntervalTimer = null;
-                timerInterval = null;
-            } else {
-                savingData = true;
-                document.getElementById("toggleBtn").textContent = "Stop Saving Data";
-                startTimer();
+                displayTimer();
+                displayInterval();
             }
         });
 
         document.getElementById("resetBtn").addEventListener("click", () => {
-            // Reset data table
             tableData = [];
-            displayTable();
+            document.querySelector("#dataTable tbody").innerHTML = "";
+        });
 
-            // Clear local storage
-            localStorage.removeItem("tableData");
+        document.getElementById("exportBtn").addEventListener("click", () => {
+            const csvContent = "data:text/csv;charset=utf-8," +
+                tableData.map(row => Object.values(row).join(",")).join("\n");
 
-            // Stop saving data and clear intervals
-            savingData = false;
-            document.getElementById("toggleBtn").textContent = "Start Saving Data";
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "saved_data.csv");
+            document.body.appendChild(link);
 
-            // Clear intervals
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
+            link.click();
+        });
 
-            if (saveDataIntervalTimer) {
-                clearInterval(saveDataIntervalTimer);
-                saveDataIntervalTimer = null;
-            }
+        document.getElementById("importBtn").addEventListener("change", (event) => {
+            const file = event.target.files[0];
+            const reader = new FileReader();
 
-            // Reset timer and interval display
-            timerDisplay.textContent = "Timer: 00:00:00";
-            intervalDisplay.textContent = "Interval: 00:00:00";
+            reader.onload = (e) => {
+                const contents = e.target.result;
+                const rows = contents.split("\n");
+                tableData = rows.slice(1).map(row => {
+                    const values = row.split(",");
+                    return {
+                        Date: values[0],
+                        Time: values[1],
+                        T1: parseFloat(values[2]),
+                        T2: parseFloat(values[3]),
+                        T3: parseFloat(values[4]),
+                        T4: parseFloat(values[5]),
+                        T5: parseFloat(values[6]),
+                        TM: parseFloat(values[7]),
+                        RH: parseFloat(values[8]),
+                        FLOW: parseFloat(values[9]),
+                        NOISE: parseFloat(values[10]),
+                    };
+                });
 
-            // Clear input values
-            document.getElementById("timerInput").value = "";
-            document.getElementById("intervalInput").value = "";
+                document.querySelector("#dataTable tbody").innerHTML = tableData.map(data => {
+                    return `
+                        <tr>
+                            <td>${data.Date}</td>
+                            <td>${data.Time}</td>
+                            <td>${data.T1}</td>
+                            <td>${data.T2}</td>
+                            <td>${data.T3}</td>
+                            <td>${data.T4}</td>
+                            <td>${data.T5}</td>
+                            <td>${data.TM}</td>
+                            <td>${data.RH}</td>
+                            <td>${data.FLOW}</td>
+                            <td>${data.NOISE}</td>
+                        </tr>
+                    `;
+                }).join("");
+            };
+
+            reader.readAsText(file);
+        });
+
+        // MQTT setup (use your own broker and topic details)
+        const client = mqtt.connect("ws://broker.hivemq.com:8000/mqtt");
+
+        client.on("connect", () => {
+            console.log("Connected to MQTT broker");
+            client.subscribe(topic);
+        });
+
+        client.on("message", (topic, message) => {
+            const data = message.toString();
+            updateDisplay(data);
         });
     </script>
 </body>
+
 </html>
