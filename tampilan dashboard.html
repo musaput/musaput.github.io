@@ -76,6 +76,8 @@
     <button id="exportBtn" class="button-custom">Export Data</button>
     <input type="file" id="importBtn" accept=".csv" class="import-button" />
     <label for="importBtn" class="import-button">Import Data</label>
+    <label for="timerInput">Set Interval (seconds):</label>
+    <input type="text" id="intervalInput" placeholder="30" />
     <label for="timerInput">Set Timer (hh:mm:ss):</label>
     <input type="text" id="timerInput" placeholder="00:05:00" />
     <div id="timerDisplay"></div>
@@ -118,6 +120,10 @@
     const topic = "esp32/bismillah";
     let savingData = false;
     let tableData = [];
+    let saveDataInterval = 0;
+    let saveDataIntervalTimer = 0;
+    let saveDataIntervalTimerSeconds = 0;
+    let hasSaved = false;
     let timerInterval;
     let timerSeconds = 0;
 
@@ -128,10 +134,22 @@
       const [hours, minutes, seconds] = input.split(":").map(Number);
       timerSeconds = hours * 3600 + minutes * 60 + seconds;
 
+      if (document.getElementById("intervalInput").value == null) {
+          saveDataInterval = 0;
+      } else {
+          saveDataInterval = document.getElementById("intervalInput").value;
+      }
+            
+            saveDataIntervalTimer = setInterval(() => {
+                hasSaved = false;
+                saveDataIntervalTimerSeconds++;
+            }, 1000);
+
       timerInterval = setInterval(() => {
         timerSeconds--;
         if (timerSeconds <= 0) {
           clearInterval(timerInterval);
+          clearInterval(saveDataIntervalTimer);
           savingData = false;
           document.getElementById("toggleBtn").textContent =
             "Start Saving Data";
@@ -213,12 +231,21 @@
       });
 
       console.log(newData)
+      // console.log("INTERVAL SECONDS " + saveDataIntervalTimerSeconds)
+    // console.log("MOD " + saveDataIntervalTimerSeconds % saveDataInterval)
+            // console.log("SAVED " + hasSaved)
 
       if (savingData) {
-        tableData.push(newData);
-        displayTable();
-      }
-    }
+        if (saveDataInterval == 0) {
+            tableData.push(newData);
+            displayTable();
+        } else if (saveDataIntervalTimerSeconds % saveDataInterval == 0 && hasSaved == false) {
+          hasSaved = true
+          tableData.push(newData);
+          displayTable();
+                }
+            }
+        }
 
     function displayTable() {
       const dataTableBody = document.querySelector("#dataTable tbody");
@@ -364,6 +391,7 @@
           startTimer();
         } else {
           clearInterval(timerInterval);
+          clearInterval(saveDataIntervalTimer);
         }
         savingData = !savingData;
         this.textContent = savingData
@@ -375,6 +403,7 @@
       .getElementById("resetBtn")
       .addEventListener("click", function () {
         clearInterval(timerInterval);
+        clearInterval(saveDataIntervalTimer);
         timerSeconds = 0;
         displayTimer();
         savingData = false;
