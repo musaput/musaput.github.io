@@ -34,10 +34,8 @@
             background-color: #f2f2f2;
         }
 
-        /* Style for custom file input button */
         #importBtn {
             display: none;
-            /* Hide the default file input */
         }
 
         .import-button {
@@ -58,16 +56,17 @@
             cursor: pointer;
         }
 
-        /* Additional styles for file input button */
         .import-button:active,
-        .import-button:focus {
+        .import-button:focus,
+        .button-custom:active,
+        .button-custom:focus {
             outline: none;
             box-shadow: none;
         }
 
-        #timerDisplay,
-        #intervalDisplay {
-            margin-right: 20px;
+        #timerDisplay, #intervalDisplay {
+            font-size: 1.2em;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -86,10 +85,8 @@
         <label for="timerInput">Set Timer (hh:mm:ss):</label>
         <input type="text" id="timerInput" placeholder="00:05:00" />
         <div id="timerDisplay">Timer: 00:00:00</div>
-        <label for="intervalDisplay">Interval Timer:</label>
-        <div id="intervalDisplay">00:00:00</div>
+        <div id="intervalDisplay">Interval: 00:00:00</div>
         <div class="grid-container" id="dataGrid">
-            <!-- Data items will be displayed here -->
             <div class="data-item" data-label="T1">T1 = 0 °C</div>
             <div class="data-item" data-label="T2">T2 = 0 °C</div>
             <div class="data-item" data-label="T3">T3 = 0 °C</div>
@@ -124,81 +121,67 @@
         </table>
     </div>
     <script>
-        const topic = "esp32/bismillah";
-        let savingData = false;
-        let tableData = [];
-        let saveDataInterval = 0;
-        let saveDataIntervalTimer = 0;
-        let saveDataIntervalTimerSeconds = 0;
-        let hasSaved = false;
         let timerInterval;
+        let intervalInterval;
         let timerSeconds = 0;
         let intervalSeconds = 0;
+        let savingData = false;
+        let saveDataInterval = 0;
+        let tableData = [];
 
+        // Elements
         const timerDisplay = document.getElementById("timerDisplay");
         const intervalDisplay = document.getElementById("intervalDisplay");
 
-        function startIntervalTimer() {
-            intervalSeconds = saveDataInterval * 1000; // Convert interval to milliseconds
-
-            setInterval(() => {
-                if (intervalSeconds > 0) {
-                    intervalSeconds -= 1000; // Decrease by 1 second
-                    displayInterval();
-                }
-            }, 1000);
-        }
-
-        function displayInterval() {
-            const hours = Math.floor(intervalSeconds / 3600000);
-            const minutes = Math.floor((intervalSeconds % 3600000) / 60000);
-            const seconds = Math.floor((intervalSeconds % 60000) / 1000);
-            intervalDisplay.textContent = 
-                `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-        }
-
+        // Start Timer Function
         function startTimer() {
             const input = document.getElementById("timerInput").value;
             const [hours, minutes, seconds] = input.split(":").map(Number);
             timerSeconds = hours * 3600 + minutes * 60 + seconds;
 
-            saveDataInterval = document.getElementById("intervalInput").value || 0;
-            
-            startIntervalTimer(); // Start the interval timer
+            saveDataInterval = parseInt(document.getElementById("intervalInput").value) || 0;
+            intervalSeconds = saveDataInterval * 1000; // Convert interval to milliseconds
 
-            saveDataIntervalTimer = setInterval(() => {
-                hasSaved = false;
-                saveDataIntervalTimerSeconds++;
-            }, 1000);
-
+            // Start the timer
             timerInterval = setInterval(() => {
                 timerSeconds--;
                 if (timerSeconds <= 0) {
                     clearInterval(timerInterval);
-                    clearInterval(saveDataIntervalTimer);
+                    timerSeconds = 0;
+                    document.getElementById("toggleBtn").textContent = "Start Saving Data";
                     savingData = false;
-                    document.getElementById("toggleBtn").textContent =
-                        "Start Saving Data";
                 }
                 displayTimer();
             }, 1000);
+
+            // Start the interval timer
+            intervalInterval = setInterval(() => {
+                if (intervalSeconds > 0) {
+                    intervalSeconds -= 1000; // Decrease by 1 second
+                    displayInterval();
+                } else {
+                    clearInterval(intervalInterval);
+                }
+            }, 1000);
         }
 
+        // Display Timer
         function displayTimer() {
-            if (timerSeconds >= 0) {
-                const hours = Math.floor(timerSeconds / 3600);
-                const minutes = Math.floor((timerSeconds % 3600) / 60);
-                const seconds = timerSeconds % 60;
-                timerDisplay.textContent = `Timer: ${hours
-                    .toString()
-                    .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
-                        .toString()
-                        .padStart(2, "0")}`;
-            } else {
-                timerDisplay.textContent = "Timer: 00:00:00";
-            }
+            const hours = Math.floor(timerSeconds / 3600);
+            const minutes = Math.floor((timerSeconds % 3600) / 60);
+            const seconds = timerSeconds % 60;
+            timerDisplay.textContent = `Timer: ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
         }
 
+        // Display Interval Timer
+        function displayInterval() {
+            const hours = Math.floor(intervalSeconds / 3600000);
+            const minutes = Math.floor((intervalSeconds % 3600000) / 60000);
+            const seconds = Math.floor((intervalSeconds % 60000) / 1000);
+            intervalDisplay.textContent = `Interval: ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+        }
+
+        // Update Display with Data
         function updateDisplay(data) {
             const dataArray = data.split(",");
             const dataGridItems = document.querySelectorAll(".data-item");
@@ -213,7 +196,7 @@
                 hour: 'numeric',
                 minute: 'numeric',
                 second: 'numeric',
-                hour12: false, // Use 24-hour format
+                hour12: false,
             };
 
             let newData = { timestamp: new Date().toLocaleString('en-US', options) };
@@ -256,15 +239,13 @@
                 }
             });
 
-            console.log(newData)
-
             if (savingData) {
                 tableData.push(newData);
                 if (tableData.length > 10) {
-                    tableData.shift(); // Remove the oldest data if more than 10 items
+                    tableData.shift(); // Keep only the last 10 entries
                 }
 
-                const row = tableTableBody.insertRow();
+                const row = dataTableBody.insertRow();
                 for (const key in newData) {
                     const cell = row.insertCell();
                     cell.textContent = newData[key];
@@ -272,6 +253,7 @@
             }
         }
 
+        // Toggle Save Data
         document.getElementById("toggleBtn").addEventListener("click", () => {
             savingData = !savingData;
             document.getElementById("toggleBtn").textContent = savingData
@@ -282,17 +264,25 @@
                 startTimer();
             } else {
                 clearInterval(timerInterval);
-                clearInterval(saveDataIntervalTimer);
+                clearInterval(intervalInterval);
                 displayTimer();
                 displayInterval();
             }
         });
 
+        // Reset Data
         document.getElementById("resetBtn").addEventListener("click", () => {
             tableData = [];
             document.querySelector("#dataTable tbody").innerHTML = "";
+            clearInterval(timerInterval);
+            clearInterval(intervalInterval);
+            timerSeconds = 0;
+            intervalSeconds = 0;
+            displayTimer();
+            displayInterval();
         });
 
+        // Export Data
         document.getElementById("exportBtn").addEventListener("click", () => {
             const csvContent = "data:text/csv;charset=utf-8," +
                 tableData.map(row => Object.values(row).join(",")).join("\n");
@@ -306,6 +296,7 @@
             link.click();
         });
 
+        // Import Data
         document.getElementById("importBtn").addEventListener("change", (event) => {
             const file = event.target.files[0];
             const reader = new FileReader();
@@ -352,7 +343,8 @@
             reader.readAsText(file);
         });
 
-        // MQTT setup (use your own broker and topic details)
+        // MQTT Setup
+        const topic = "esp32/bismillah";
         const client = mqtt.connect("ws://broker.hivemq.com:8000/mqtt");
 
         client.on("connect", () => {
