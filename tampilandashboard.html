@@ -340,14 +340,33 @@
       }
     });
 
-    document.getElementById("resetBtn").addEventListener("click", () => {
-      clearInterval(timerInterval);
-      clearInterval(saveDataIntervalTimer);
-      savingData = false;
-      tableData = [];
-      displayTable();
-      document.getElementById("toggleBtn").textContent = "Start Saving Data";
-    });
+document.getElementById("resetBtn").addEventListener("click", () => {
+  // Hentikan interval timer
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
+
+  // Hentikan interval untuk waktu set interval
+  if (saveDataIntervalTimer) {
+    clearInterval(saveDataIntervalTimer);
+  }
+
+  // Setel ulang status savingData
+  savingData = false;
+
+  // Kosongkan data yang tersimpan
+  tableData = [];
+
+  // Perbarui tampilan tabel
+  displayTable();
+
+  // Atur teks tombol toggle kembali ke "Start Saving Data"
+  document.getElementById("toggleBtn").textContent = "Start Saving Data";
+
+  // Reset tampilan waktu interval dan timer
+  intervalDisplay.textContent = "Interval: 00:00:00";
+  timerDisplay.textContent = "Timer: 00:00:00";
+});
 
     document.getElementById("exportBtn").addEventListener("click", () => {
       exportData();
