@@ -38,15 +38,7 @@
             display: none;
         }
 
-        .import-button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
+        .import-button,
         .button-custom {
             padding: 10px 20px;
             background-color: #007bff;
@@ -56,27 +48,30 @@
             cursor: pointer;
         }
 
-        #timerContainer {
+        .import-button:active,
+        .import-button:focus,
+        .button-custom:active,
+        .button-custom:focus {
+            outline: none;
+            box-shadow: none;
+        }
+
+        /* New styles for timer and interval display */
+        #timerIntervalContainer {
             display: flex;
             justify-content: space-between;
-            margin-top: 10px;
+            margin-top: 20px;
         }
 
-        #timerDisplay,
-        #intervalDisplay {
-            font-size: 18px;
-            font-weight: bold;
+        .timer-display,
+        .interval-display {
+            font-size: 1.2em;
             padding: 10px;
-        }
-
-        #timerDisplay {
             border: 1px solid #ddd;
+            border-radius: 5px;
             background-color: #f9f9f9;
-        }
-
-        #intervalDisplay {
-            border: 1px solid #ddd;
-            background-color: #f9f9f9;
+            text-align: center;
+            flex: 1;
         }
     </style>
 </head>
@@ -91,12 +86,12 @@
         <input type="file" id="importBtn" accept=".csv" class="import-button" />
         <label for="importBtn" class="import-button">Import Data</label>
         <label for="intervalInput">Set Interval (seconds):</label>
-        <input type="text" id="intervalInput" placeholder="30" />
+        <input type="number" id="intervalInput" placeholder="30" />
         <label for="timerInput">Set Timer (hh:mm:ss):</label>
         <input type="text" id="timerInput" placeholder="00:05:00" />
-        <div id="timerContainer">
-            <div id="timerDisplay">Timer: 00:00:00</div>
-            <div id="intervalDisplay">Interval: Disabled</div>
+        <div id="timerIntervalContainer">
+            <div id="timerDisplay" class="timer-display">Timer: 00:00:00</div>
+            <div id="intervalDisplay" class="interval-display">Interval: 00:00:00</div>
         </div>
         <div class="grid-container" id="dataGrid">
             <!-- Data items will be displayed here -->
@@ -138,10 +133,10 @@
         let savingData = false;
         let tableData = [];
         let saveDataInterval = 0;
-        let saveDataIntervalTimer = 0;
         let saveDataIntervalTimerSeconds = 0;
         let hasSaved = false;
         let timerInterval;
+        let intervalInterval;
         let timerSeconds = 0;
         let intervalSeconds = 0;
 
@@ -153,13 +148,14 @@
             const [hours, minutes, seconds] = input.split(":").map(Number);
             timerSeconds = hours * 3600 + minutes * 60 + seconds;
 
-            intervalSeconds = parseInt(document.getElementById("intervalInput").value) || 0;
+            saveDataInterval = parseInt(document.getElementById("intervalInput").value) || 0;
 
-            // Clear previous intervals
-            clearInterval(timerInterval);
-            clearInterval(saveDataIntervalTimer);
+            saveDataIntervalTimer = setInterval(() => {
+                hasSaved = false;
+                saveDataIntervalTimerSeconds++;
+                updateIntervalDisplay();
+            }, 1000);
 
-            // Start timer
             timerInterval = setInterval(() => {
                 timerSeconds--;
                 if (timerSeconds <= 0) {
@@ -169,19 +165,7 @@
                     document.getElementById("toggleBtn").textContent = "Start Saving Data";
                 }
                 displayTimer();
-                updateIntervalDisplay(); // Update interval display
             }, 1000);
-
-            // Start save interval
-            if (intervalSeconds > 0) {
-                saveDataIntervalTimer = setInterval(() => {
-                    if (savingData) {
-                        saveData();
-                    }
-                }, intervalSeconds * 1000);
-            }
-
-            updateIntervalDisplay(); // Initial update
         }
 
         function displayTimer() {
@@ -189,125 +173,166 @@
                 const hours = Math.floor(timerSeconds / 3600);
                 const minutes = Math.floor((timerSeconds % 3600) / 60);
                 const seconds = timerSeconds % 60;
-                timerDisplay.textContent = `Timer: ${hours
-                    .toString()
-                    .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
-                        .toString()
-                        .padStart(2, "0")}`;
+                timerDisplay.textContent = `Timer: ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
             } else {
                 timerDisplay.textContent = "Timer: 00:00:00";
             }
         }
 
         function updateIntervalDisplay() {
-            if (intervalSeconds > 0) {
-                intervalDisplay.textContent = `Interval: ${intervalSeconds} seconds`;
-            } else {
-                intervalDisplay.textContent = "Interval: Disabled";
+            if (saveDataInterval > 0) {
+                const hours = Math.floor(saveDataIntervalTimerSeconds / 3600);
+                const minutes = Math.floor((saveDataIntervalTimerSeconds % 3600) / 60);
+                const seconds = saveDataIntervalTimerSeconds % 60;
+                intervalDisplay.textContent = `Interval: ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
             }
         }
 
-        function saveData() {
-            if (!hasSaved) {
-                // This function can be improved or replaced based on actual data handling requirements
-                const data = "T1=25,T2=30,T3=22,T4=27,T5=29,TM=28,RH=50,FLOW=1.2,NOISE=45"; // Example data
-                const dataArray = data.split(",");
-                const dataGridItems = document.querySelectorAll(".data-item");
-                const dataTableBody = document.querySelector("#dataTable tbody");
+        function updateDisplay(data) {
+            const dataArray = data.split(",");
+            const dataGridItems = document.querySelectorAll(".data-item");
 
-                dataGridItems.forEach((item) => (item.textContent = ""));
+            dataGridItems.forEach((item) => (item.textContent = ""));
 
-                const options = {
-                    day: 'numeric',
-                    month: 'numeric',
-                    year: 'numeric',
-                    hour: 'numeric',
-                    minute: 'numeric',
-                    second: 'numeric',
-                    hour12: false,
-                };
+            const newData = { timestamp: new Date().toLocaleString() };
 
-                let newData = { timestamp: new Date().toLocaleString('en-US', options) };
+            dataArray.forEach((item) => {
+                const [label, value] = item.split("=");
+                let unit = getUnit(label);
 
-                dataArray.forEach((item) => {
-                    const [label, value] = item.split("=");
-                    let unit = "";
+                const dataItem = document.querySelector(`.data-item[data-label="${label}"]`);
+                if (dataItem) {
+                    dataItem.textContent = `${label} = ${value} ${unit}`;
+                }
 
-                    switch (label) {
-                        case "T1":
-                        case "T2":
-                        case "T3":
-                        case "T4":
-                        case "T5":
-                        case "TM":
-                            unit = "°C";
-                            break;
-                        case "RH":
-                            unit = "%";
-                            break;
-                        case "FLOW":
-                            unit = "m/s";
-                            break;
-                        case "NOISE":
-                            unit = "dB";
-                            break;
-                        default:
-                            break;
-                    }
-
-                    const dataItem = document.querySelector(
-                        `.data-item[data-label="${label}"]`
-                    );
-                    if (dataItem) {
-                        dataItem.textContent = `${label} = ${value} ${unit}`;
-                    }
-
+                if (savingData) {
                     newData[label] = parseFloat(value);
-                });
+                }
+            });
 
-                tableData.push(newData);
-                displayTable();
-                hasSaved = true;
+            if (savingData) {
+                if (saveDataInterval === 0 || saveDataIntervalTimerSeconds % saveDataInterval === 0 && !hasSaved) {
+                    hasSaved = true;
+                    tableData.push(newData);
+                    displayTable();
+                }
+            }
+        }
+
+        function getUnit(label) {
+            switch (label) {
+                case "T1":
+                case "T2":
+                case "T3":
+                case "T4":
+                case "T5":
+                case "TM":
+                    return "°C";
+                case "RH":
+                    return "%";
+                case "FLOW":
+                    return "m/s";
+                case "NOISE":
+                    return "dB";
+                default:
+                    return "";
             }
         }
 
         function displayTable() {
             const dataTableBody = document.querySelector("#dataTable tbody");
             dataTableBody.innerHTML = "";
-            tableData.forEach((entry) => {
+            tableData.forEach((data) => {
                 const row = document.createElement("tr");
-                Object.keys(entry).forEach((key) => {
-                    const cell = document.createElement("td");
-                    cell.textContent = entry[key];
-                    row.appendChild(cell);
-                });
+
+                const [date, time] = new Date(data.timestamp).toLocaleString().split(", ");
+                row.innerHTML = `<td>${date}</td><td>${time}</td>${Object.values(data).filter(val => typeof val === 'number').map(val => `<td>${val}</td>`).join('')}`;
+
                 dataTableBody.appendChild(row);
             });
+
+            localStorage.setItem("tableData", JSON.stringify(tableData));
         }
+
+        window.onload = function () {
+            const storedData = localStorage.getItem("tableData");
+            if (storedData) {
+                tableData = JSON.parse(storedData);
+                displayTable();
+            }
+        };
+
+        const clientId = "mqttjs_" + Math.random().toString(16).substr(2, 8);
+        const host = "wss://broker.emqx.io:8084/mqtt";
+        const options = {
+            keepalive: 60,
+            clientId: clientId,
+            protocolId: "MQTT",
+            protocolVersion: 4,
+            clean: true,
+            reconnectPeriod: 1000,
+            connectTimeout: 30 * 1000,
+        };
+
+        const client = mqtt.connect(host, options);
+
+        client.on('connect', function () {
+            client.subscribe(topic, function (err) {
+                if (!err) {
+                    console.log(`Subscribed to ${topic}`);
+                }
+            });
+        });
+
+        client.on('message', function (topic, message) {
+            updateDisplay(message.toString());
+        });
 
         document.getElementById("toggleBtn").addEventListener("click", () => {
             savingData = !savingData;
+            document.getElementById("toggleBtn").textContent = savingData ? "Stop Saving Data" : "Start Saving Data";
             if (savingData) {
                 startTimer();
-                document.getElementById("toggleBtn").textContent = "Stop Saving Data";
-                hasSaved = false;
-            } else {
-                clearInterval(timerInterval);
-                clearInterval(saveDataIntervalTimer);
-                document.getElementById("toggleBtn").textContent = "Start Saving Data";
             }
         });
 
         document.getElementById("resetBtn").addEventListener("click", () => {
             tableData = [];
             displayTable();
-            document.getElementById("timerDisplay").textContent = "Timer: 00:00:00";
-            document.getElementById("intervalDisplay").textContent = "Interval: Disabled";
-            clearInterval(timerInterval);
-            clearInterval(saveDataIntervalTimer);
+            localStorage.removeItem("tableData");
         });
 
-        // Add functionality for export and import buttons if necessary
+        document.getElementById("exportBtn").addEventListener("click", () => {
+            const csvContent = "data:text/csv;charset=utf-8,"
+                + tableData.map(e => Object.values(e).join(",")).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "data.csv");
+            document.body.appendChild(link);
+            link.click();
+        });
+
+        document.getElementById("importBtn").addEventListener("change", (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const contents = e.target.result;
+                    const lines = contents.split("\n");
+                    tableData = lines.map(line => {
+                        const [timestamp, ...values] = line.split(",");
+                        const data = { timestamp };
+                        values.forEach((val, index) => {
+                            data[`T${index + 1}`] = parseFloat(val);
+                        });
+                        return data;
+                    });
+                    displayTable();
+                };
+                reader.readAsText(file);
+            }
+        });
     </script>
 </body>
 
