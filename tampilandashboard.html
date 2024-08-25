@@ -167,12 +167,9 @@
       .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
         .toString()
         .padStart(2, "0")}`;
-}
-
-    <div id="timerSection" style="display: flex; align-items: center;">
-    <p id="timerDisplay" style="margin-right: 20px;">00:00:00</p>
-    <p id="saveDataIntervalTimerDisplay">Interval: 00:00:00</p>
-</div>
+} else {
+      saveDataIntervalTimerDisplay.textContent = "Interval: 00:00:00";
+    }
 
     function startSaveDataIntervalTimer() {
     saveDataIntervalTimer = setInterval(function () {
@@ -182,20 +179,20 @@
     }, saveDataInterval * 1000);
 }
     
-//     function displayTimer() {
-//     if (timerSeconds >= 0) {
-//         const hours = Math.floor(timerSeconds / 3600);
-//         const minutes = Math.floor((timerSeconds % 3600) / 60);
-//         const seconds = timerSeconds % 60;
-//         timerDisplay.textContent = `Timer: ${hours
-//           .toString()
-//           .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
-//             .toString()
-//             .padStart(2, "0")}`;
-//     } else {
-//         timerDisplay.textContent = "Timer: 00:00:00";
-//     }
-// }
+    function displayTimer() {
+    if (timerSeconds >= 0) {
+        const hours = Math.floor(timerSeconds / 3600);
+        const minutes = Math.floor((timerSeconds % 3600) / 60);
+        const seconds = timerSeconds % 60;
+        timerDisplay.textContent = `Timer: ${hours
+          .toString()
+          .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
+            .toString()
+            .padStart(2, "0")}`;
+    } else {
+        timerDisplay.textContent = "Timer: 00:00:00";
+    }
+}
 
 function updateDisplay(data) {
     const dataArray = data.split(",");
