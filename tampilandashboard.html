@@ -34,21 +34,11 @@
       background-color: #f2f2f2;
     }
 
-    /* Style for custom file input button */
     #importBtn {
       display: none;
-      /* Hide the default file input */
     }
 
-    .import-button {
-      padding: 10px 20px;
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
+    .import-button,
     .button-custom {
       padding: 10px 20px;
       background-color: #007bff;
@@ -58,14 +48,14 @@
       cursor: pointer;
     }
 
-    /* Additional styles for file input button */
     .import-button:active,
-    .import-button:focus {
+    .import-button:focus,
+    .button-custom:active,
+    .button-custom:focus {
       outline: none;
       box-shadow: none;
     }
 
-    /* New styles for timer display */
     .timer-container {
       display: flex;
       align-items: center;
@@ -145,7 +135,6 @@
     let saveDataInterval = 0;
     let saveDataIntervalTimer = 0;
     let saveDataIntervalTimerSeconds = 0;
-    let hasSaved = false;
     let timerInterval;
     let timerSeconds = 0;
 
@@ -157,16 +146,12 @@
       const intervalInput = document.getElementById("intervalInput").value;
       const [hours, minutes, seconds] = timerInput.split(":").map(Number);
       timerSeconds = hours * 3600 + minutes * 60 + seconds;
-      saveDataInterval = parseInt(intervalInput, 10) || 0; // Default to 0 if not set
-    
+      saveDataInterval = parseInt(intervalInput, 10) || 0;
+
       saveDataIntervalTimerSeconds = 0;
 
       saveDataIntervalTimer = setInterval(() => {
         saveDataIntervalTimerSeconds++;
-        if (saveDataInterval > 0 && saveDataIntervalTimerSeconds >= saveDataInterval && savingData) {
-          hasSaved = false;
-          saveDataIntervalTimerSeconds = 0; // Reset the interval timer
-        }
         displayInterval();
       }, 1000);
 
@@ -181,7 +166,7 @@
         displayTimer();
       }, 1000);
     }
-    
+
     function displayTimer() {
       if (timerSeconds >= 0) {
         const hours = Math.floor(timerSeconds / 3600);
@@ -198,7 +183,7 @@
     }
 
     function displayInterval() {
-      if (saveDataIntervalTimerSeconds >= 0) {
+      if (saveDataInterval > 0) {
         const hours = Math.floor(saveDataIntervalTimerSeconds / 3600);
         const minutes = Math.floor((saveDataIntervalTimerSeconds % 3600) / 60);
         const seconds = saveDataIntervalTimerSeconds % 60;
