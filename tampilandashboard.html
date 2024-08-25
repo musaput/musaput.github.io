@@ -170,10 +170,9 @@
         }
 
         function updateIntervalDisplay() {
-            let remainingInterval = intervalCounter % intervalSeconds;
-            const hours = Math.floor(remainingInterval / 3600);
-            const minutes = Math.floor((remainingInterval % 3600) / 60);
-            const seconds = remainingInterval % 60;
+            const hours = Math.floor(intervalCounter / 3600);
+            const minutes = Math.floor((intervalCounter % 3600) / 60);
+            const seconds = intervalCounter % 60;
             intervalDisplay.textContent = `Interval Timer: ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
         }
 
@@ -246,8 +245,8 @@
             console.log("Connection error: ", err);
             client.end();
         });
-        client.on("reconnect", () => {
-            console.log("Reconnecting...");
+        client.on("close", () => {
+            console.log("Connection closed");
         });
         client.on("connect", () => {
             console.log("Connected");
@@ -308,7 +307,7 @@
             clearInterval(timerInterval);
             clearInterval(intervalInterval);
             timerSeconds = 0;
-            intervalSeconds = 0;
+            intervalCounter = 0;
             displayTimer();
             displayInterval();
             tableData = [];
