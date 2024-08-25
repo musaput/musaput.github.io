@@ -64,6 +64,19 @@
       outline: none;
       box-shadow: none;
     }
+
+    /* New styles for timer display */
+    .timer-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .timer-display {
+      font-size: 1.5em;
+      font-weight: bold;
+    }
   </style>
 </head>
 
@@ -76,11 +89,20 @@
     <button id="exportBtn" class="button-custom">Export Data</button>
     <input type="file" id="importBtn" accept=".csv" class="import-button" />
     <label for="importBtn" class="import-button">Import Data</label>
-    <label for="timerInput">Set Interval (seconds):</label>
-    <input type="text" id="intervalInput" placeholder="30" />
-    <label for="timerInput">Set Timer (hh:mm:ss):</label>
-    <input type="text" id="timerInput" placeholder="00:05:00" />
-    <div id="timerDisplay"></div>
+    <div class="timer-container">
+      <div>
+        <label for="intervalInput">Set Interval (seconds):</label>
+        <input type="text" id="intervalInput" placeholder="30" />
+      </div>
+      <div>
+        <label for="timerInput">Set Timer (hh:mm:ss):</label>
+        <input type="text" id="timerInput" placeholder="00:05:00" />
+      </div>
+    </div>
+    <div class="timer-container">
+      <div id="intervalDisplay" class="timer-display">Interval: 00:00:00</div>
+      <div id="timerDisplay" class="timer-display">Timer: 00:00:00</div>
+    </div>
     <div class="grid-container" id="dataGrid">
       <!-- Data items will be displayed here -->
       <div class="data-item" data-label="T1">T1 = 0 °C</div>
@@ -128,38 +150,40 @@
     let timerSeconds = 0;
 
     const timerDisplay = document.getElementById("timerDisplay");
+    const intervalDisplay = document.getElementById("intervalDisplay");
 
     function startTimer() {
-    const input = document.getElementById("timerInput").value;
-    const [hours, minutes, seconds] = input.split(":").map(Number);
-    timerSeconds = hours * 3600 + minutes * 60 + seconds;
-
-    saveDataInterval = parseInt(document.getElementById("intervalInput").value, 10) || 0; // Default to 0 if not set
+      const timerInput = document.getElementById("timerInput").value;
+      const intervalInput = document.getElementById("intervalInput").value;
+      const [hours, minutes, seconds] = timerInput.split(":").map(Number);
+      timerSeconds = hours * 3600 + minutes * 60 + seconds;
+      saveDataInterval = parseInt(intervalInput, 10) || 0; // Default to 0 if not set
     
-    saveDataIntervalTimerSeconds = 0;
+      saveDataIntervalTimerSeconds = 0;
 
-    saveDataIntervalTimer = setInterval(() => {
+      saveDataIntervalTimer = setInterval(() => {
         saveDataIntervalTimerSeconds++;
         if (saveDataInterval > 0 && saveDataIntervalTimerSeconds >= saveDataInterval && savingData) {
-            hasSaved = false;
-            saveDataIntervalTimerSeconds = 0; // Reset the interval timer
+          hasSaved = false;
+          saveDataIntervalTimerSeconds = 0; // Reset the interval timer
         }
-    }, 1000);
+        displayInterval();
+      }, 1000);
 
-    timerInterval = setInterval(() => {
+      timerInterval = setInterval(() => {
         timerSeconds--;
         if (timerSeconds <= 0) {
-            clearInterval(timerInterval);
-            clearInterval(saveDataIntervalTimer);
-            savingData = false;
-            document.getElementById("toggleBtn").textContent = "Start Saving Data";
+          clearInterval(timerInterval);
+          clearInterval(saveDataIntervalTimer);
+          savingData = false;
+          document.getElementById("toggleBtn").textContent = "Start Saving Data";
         }
         displayTimer();
-    }, 1000);
-}
+      }, 1000);
+    }
     
     function displayTimer() {
-    if (timerSeconds >= 0) {
+      if (timerSeconds >= 0) {
         const hours = Math.floor(timerSeconds / 3600);
         const minutes = Math.floor((timerSeconds % 3600) / 60);
         const seconds = timerSeconds % 60;
@@ -168,16 +192,31 @@
           .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
             .toString()
             .padStart(2, "0")}`;
-    } else {
+      } else {
         timerDisplay.textContent = "Timer: 00:00:00";
+      }
     }
-}
 
-function updateDisplay(data) {
-    const dataArray = data.split(",");
-    const dataGridItems = document.querySelectorAll(".data-item");
+    function displayInterval() {
+      if (saveDataIntervalTimerSeconds >= 0) {
+        const hours = Math.floor(saveDataIntervalTimerSeconds / 3600);
+        const minutes = Math.floor((saveDataIntervalTimerSeconds % 3600) / 60);
+        const seconds = saveDataIntervalTimerSeconds % 60;
+        intervalDisplay.textContent = `Interval: ${hours
+          .toString()
+          .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
+            .toString()
+            .padStart(2, "0")}`;
+      } else {
+        intervalDisplay.textContent = "Interval: 00:00:00";
+      }
+    }
 
-    const options = {
+    function updateDisplay(data) {
+      const dataArray = data.split(",");
+      const dataGridItems = document.querySelectorAll(".data-item");
+
+      const options = {
         day: 'numeric',
         month: 'numeric',
         year: 'numeric',
@@ -185,427 +224,166 @@ function updateDisplay(data) {
         minute: 'numeric',
         second: 'numeric',
         hour12: false, 
-    };
+      };
 
-    let newData = { timestamp: new Date().toLocaleString('en-US', options) };
+      let newData = { timestamp: new Date().toLocaleString('en-US', options) };
 
-    dataArray.forEach((item) => {
+      dataArray.forEach((item) => {
         const [label, value] = item.split("=");
         let unit = "";
 
         switch (label) {
-            case "T1": case "T2": case "T3": case "T4": case "T5": case "TM":
-                unit = "°C";
-                break;
-            case "RH":
-                unit = "%";
-                break;
-            case "FLOW":
-                unit = "m/s";
-                break;
-            case "NOISE":
-                unit = "dB";
-                break;
-            default:
-                break;
+          case "T1": case "T2": case "T3": case "T4": case "T5": case "TM":
+            unit = "°C";
+            break;
+          case "RH":
+            unit = "%";
+            break;
+          case "FLOW":
+            unit = "m/s";
+            break;
+          case "NOISE":
+            unit = "dB";
+            break;
+          default:
+            break;
         }
 
-        const dataItem = document.querySelector(`.data-item[data-label="${label}"]`);
-        if (dataItem) {
-            dataItem.textContent = `${label} = ${value} ${unit}`;
-        }
+        newData[label] = value.trim() + unit;
+      });
 
-        if (savingData) {
-            newData[label] = parseFloat(value);
+      dataGridItems.forEach((item) => {
+        const label = item.getAttribute("data-label");
+        if (newData[label]) {
+          item.textContent = `${label} = ${newData[label]}`;
         }
-    });
+      });
 
-    if (savingData) {
-        if (saveDataInterval == 0 || saveDataIntervalTimerSeconds == 0) {
-            tableData.push(newData);
-            displayTable();
-        } else if (saveDataIntervalTimerSeconds >= saveDataInterval && !hasSaved) {
-            hasSaved = true;
-            tableData.push(newData);
-            displayTable();
-        }
+      if (savingData) {
+        tableData.push(newData);
+        displayTable();
+      }
     }
-}
-
-    // function startTimer() {
-    //   const input = document.getElementById("timerInput").value;
-    //   const [hours, minutes, seconds] = input.split(":").map(Number);
-    //   timerSeconds = hours * 3600 + minutes * 60 + seconds;
-
-    //   if (document.getElementById("intervalInput").value == null) {
-    //       saveDataInterval = 0;
-    //   } else {
-    //       saveDataInterval = document.getElementById("intervalInput").value;
-    //   }
-            
-    //         saveDataIntervalTimer = setInterval(() => {
-    //             hasSaved = false;
-    //             saveDataIntervalTimerSeconds++;
-    //         }, 1000);
-
-    //   timerInterval = setInterval(() => {
-    //     timerSeconds--;
-    //     if (timerSeconds <= 0) {
-    //       clearInterval(timerInterval);
-    //       clearInterval(saveDataIntervalTimer);
-    //       savingData = false;
-    //       document.getElementById("toggleBtn").textContent =
-    //         "Start Saving Data";
-    //     }
-    //     displayTimer();
-    //   }, 1000);
-    // }
-
-    // function displayTimer() {
-    //   if (timerSeconds >= 0) {
-    //     const hours = Math.floor(timerSeconds / 3600);
-    //     const minutes = Math.floor((timerSeconds % 3600) / 60);
-    //     const seconds = timerSeconds % 60;
-    //     timerDisplay.textContent = `Timer: ${hours
-    //       .toString()
-    //       .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
-    //         .toString()
-    //         .padStart(2, "0")}`;
-    //   } else {
-    //     timerDisplay.textContent = "Timer: 00:00:00";
-    //   }
-    // }
-
-    // function updateDisplay(data) {
-    //   const dataArray = data.split(",");
-    //   const dataGridItems = document.querySelectorAll(".data-item");
-    //   const dataTableBody = document.querySelector("#dataTable tbody");
-
-    //   dataGridItems.forEach((item) => (item.textContent = ""));
-
-    //   const options = {
-    //     day: 'numeric',
-    //     month: 'numeric',
-    //     year: 'numeric',
-    //     hour: 'numeric',
-    //     minute: 'numeric',
-    //     second: 'numeric',
-    //     hour12: false, // Use 24-hour format
-    //   };
-
-    //   let newData = { timestamp: new Date().toLocaleString('en-US', options) };
-
-    //   dataArray.forEach((item) => {
-    //     const [label, value] = item.split("=");
-    //     let unit = "";
-
-    //     switch (label) {
-    //       case "T1":
-    //       case "T2":
-    //       case "T3":
-    //       case "T4":
-    //       case "T5":
-    //       case "TM":
-    //         unit = "°C";
-    //         break;
-    //       case "RH":
-    //         unit = "%";
-    //         break;
-    //       case "FLOW":
-    //         unit = "m/s";
-    //         break;
-    //       case "NOISE":
-    //         unit = "dB";
-    //         break;
-    //       default:
-    //         break;
-    //     }
-
-    //     const dataItem = document.querySelector(
-    //       `.data-item[data-label="${label}"]`
-    //     );
-    //     if (dataItem) {
-    //       dataItem.textContent = `${label} = ${value} ${unit}`;
-    //     }
-
-    //     if (savingData) {
-    //       newData[label] = parseFloat(value);
-    //     }
-    //   });
-
-    //   console.log(newData)
-      // console.log("INTERVAL SECONDS " + saveDataIntervalTimerSeconds)
-    // console.log("MOD " + saveDataIntervalTimerSeconds % saveDataInterval)
-            // console.log("SAVED " + hasSaved)
-
-      // if (savingData) {
-      //   if (saveDataInterval == 0) {
-      //       tableData.push(newData);
-      //       displayTable();
-      //   } else if (saveDataIntervalTimerSeconds % saveDataInterval == 0 && hasSaved == false) {
-      //     hasSaved = true
-      //     tableData.push(newData);
-      //     displayTable();
-      //           }
-      //       }
-      //   }
 
     function displayTable() {
-      const dataTableBody = document.querySelector("#dataTable tbody");
-      dataTableBody.innerHTML = "";
+      const tableBody = document.querySelector("#dataTable tbody");
+      tableBody.innerHTML = "";
+
       tableData.forEach((data) => {
         const row = document.createElement("tr");
-
-        const options = {
-          day: 'numeric',
-          month: 'numeric',
-          year: 'numeric',
-          hour: 'numeric',
-          minute: 'numeric',
-          second: 'numeric',
-          hour12: false // Use 24-hour format
-        };
-
-        // Splitting Timestamp into Date and Time
-        const timestamp = new Date(data.timestamp).toLocaleDateString("en-US", options).toString().split(', ');
-        const date = timestamp[0];
-        const time = timestamp[1];
-
-        // Creating separate cells for Date and Time
-        const dateCell = document.createElement("td");
-        const timeCell = document.createElement("td");
-        dateCell.textContent = date;
-        timeCell.textContent = time;
-
-        // Appending cells to the row
-        row.appendChild(dateCell);
-        row.appendChild(timeCell);
-
-        // Appending other data cells
-        for (const key in data) {
-          if (key !== "timestamp") {
-            const cell = document.createElement("td");
-            cell.textContent = data[key];
-            row.appendChild(cell);
-          }
-        }
-
-        dataTableBody.appendChild(row);
+        row.innerHTML = `
+          <td>${data.timestamp}</td>
+          <td>${data.timestamp}</td>
+          <td>${data.T1 || ""}</td>
+          <td>${data.T2 || ""}</td>
+          <td>${data.T3 || ""}</td>
+          <td>${data.T4 || ""}</td>
+          <td>${data.T5 || ""}</td>
+          <td>${data.TM || ""}</td>
+          <td>${data.RH || ""}</td>
+          <td>${data.FLOW || ""}</td>
+          <td>${data.NOISE || ""}</td>
+        `;
+        tableBody.appendChild(row);
       });
-
-      // Save tableData to local storage
-      localStorage.setItem("tableData", JSON.stringify(tableData));
     }
 
-    // Load data from local storage on page load
-    window.onload = function () {
-      const storedData = localStorage.getItem("tableData");
-      if (storedData) {
-        tableData = JSON.parse(storedData);
-        displayTable();
-      }
-    };
+    function exportData() {
+      const csvRows = [];
+      const headers = [
+        "Date",
+        "Time",
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "TM",
+        "RH",
+        "FLOW",
+        "NOISE"
+      ];
+      csvRows.push(headers.join(","));
 
-    const clientId = "mqttjs_" + Math.random().toString(16).substr(2, 8);
-    const host = "wss://broker.emqx.io:8084/mqtt";
-    const options = {
-      keepalive: 60,
-      clientId: clientId,
-      protocolId: "MQTT",
-      protocolVersion: 4,
-      clean: true,
-      reconnectPeriod: 1000,
-      connectTimeout: 30 * 1000,
-      will: {
-        topic: "WillMsg",
-        payload: "Connection Closed abnormally..!",
-        qos: 0,
-        retain: false,
-      },
-    };
-
-    console.log("Connecting mqtt client");
-    const client = mqtt.connect(host, options);
-    client.on("error", (err) => {
-      console.log("Connection error: ", err);
-      client.end();
-    });
-    client.on("reconnect", () => {
-      console.log("Reconnecting...");
-    });
-    client.on("connect", function () {
-      console.log("Connected to MQTT broker");
-      client.subscribe(topic, { qos: 0 });
-    });
-
-    client.on("message", (topic, message, packet) => {
-      console.log(
-        `Received Message: ${message.toString()} On topic: ${topic}`
-      );
-      updateDisplay(message.toString());
-    });
-
-    // Generate random float numbers for testing
-    function getRandomFloat(min, max) {
-      return Math.random() * (max - min) + min;
-    }
-
-    // Generate random data string
-    function generateRandomDataString() {
-      // Random temperature values (T1 to T5)
-      let temperatureT1 = getRandomFloat(0, 100);
-      let temperatureT2 = getRandomFloat(0, 100);
-      let temperatureT3 = getRandomFloat(0, 100);
-      let temperatureT4 = getRandomFloat(0, 100);
-      let temperatureT5 = getRandomFloat(0, 100);
-
-      // Random MAX6675 temperature value (TM)
-      let temperatureMAX6675 = getRandomFloat(0, 100);
-
-      // Random humidity value (RH)
-      let humidity = getRandomFloat(0, 100);
-
-      // Random airflow value (ARF)
-      let airflowSCMM = getRandomFloat(0, 100);
-
-      // Random noise value (NOISE)
-      let db = getRandomFloat(0, 100);
-
-      // Construct the data string
-      let dataString = `T1=${temperatureT1.toFixed(2)},`;
-      dataString += `T2=${temperatureT2.toFixed(2)},`;
-      dataString += `T3=${temperatureT3.toFixed(2)},`;
-      dataString += `T4=${temperatureT4.toFixed(2)},`;
-      dataString += `T5=${temperatureT5.toFixed(2)},`;
-      dataString += `TM=${temperatureMAX6675.toFixed(2)},`;
-      dataString += `RH=${humidity.toFixed(2)},`;
-      dataString += `FLOW=${airflowSCMM.toFixed(2)},`;
-      dataString += `NOISE=${db.toFixed(2)}`;
-
-      updateDisplay(dataString);
-    }
-
-    // setInterval(generateRandomDataString, 1000);
-
-    document
-      .getElementById("toggleBtn")
-      .addEventListener("click", function () {
-        if (!savingData) {
-          startTimer();
-        } else {
-          clearInterval(timerInterval);
-          clearInterval(saveDataIntervalTimer);
-        }
-        savingData = !savingData;
-        this.textContent = savingData
-          ? "Stop Saving Data"
-          : "Start Saving Data";
+      tableData.forEach((row) => {
+        const values = headers.map(header => row[header] || "");
+        csvRows.push(values.join(","));
       });
 
-    document
-    document.getElementById("resetBtn").addEventListener("click", function () {
-    clearInterval(timerInterval); // Menghentikan interval timer utama
-    clearInterval(saveDataIntervalTimer); // Menghentikan interval penyimpanan data
+      const csvData = csvRows.join("\n");
+      const blob = new Blob([csvData], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
 
-    timerSeconds = 0; // Mengatur ulang waktu
-    saveDataIntervalTimerSeconds = 0; // Mengatur ulang interval penyimpanan
-    displayTimer(); // Menampilkan timer yang direset
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "data.csv";
+      a.click();
+    }
 
-    savingData = false; // Menghentikan proses penyimpanan data
-    tableData = []; // Mengosongkan tabel data yang tersimpan
-
-    displayTable(); // Menampilkan tabel yang sudah direset
-    document.getElementById("toggleBtn").textContent = "Start Saving Data"; // Mengatur ulang tombol mulai
-});
-
-
-
-      // .getElementById("resetBtn")
-      // .addEventListener("click", function () {
-      //   clearInterval(timerInterval);
-      //   clearInterval(saveDataIntervalTimer);
-      //   timerSeconds = 0;
-      //   displayTimer();
-      //   savingData = false;
-      //   tableData = [];
-      //   displayTable();
-      //   document.getElementById("toggleBtn").textContent =
-      //     "Start Saving Data";
-      // });
-
-    document
-      .getElementById("exportBtn")
-      .addEventListener("click", function () {
-        const csvContent = tableData
-          .map((row) => Object.values(row).join(","))
-          .join("\n");
-        const blob = new Blob([csvContent], {
-          type: "text/csv;charset=utf-8;",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "data.csv";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      });
-
-    document.getElementById("importBtn").addEventListener("change", function (e) {
-      if (tableData.length == 0) {
-        savingData = !savingData;
-        generateRandomDataString();
-        savingData = !savingData;
-      }
-
-      const file = e.target.files[0];
-      if (!file) return;
+    function importData(file) {
       const reader = new FileReader();
-      reader.onload = function (event) {
-        const csvData = event.target.result;
-        // const rows = csvData.split("\n").slice(1); // Skip header row
-        const rows = csvData.split("\n");
-        tableData = rows.map((row) => {
-          const columns = row.split(",");
-          let newData = {};
-          for (let i = 0; i < columns.length; i++) {
-            if (i == 1) {
-              continue;
-            }
-            if (i === 0) {
-              // If it's the first column (Date), set it as the "timestamp"
-              const timestamp = columns[0] + columns[1]
-              const [date, time] = timestamp.split(" "); // Split date and time
-              const [day, month, year] = date.split("/").map(Number); // Parse date
-              const [hours, minutes, seconds] = time.split(":").map(Number); // Parse time
-              // Format date components with leading zeros if needed
-              const formattedDate = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
 
-              // Format time components with leading zeros if needed
-              const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      reader.onload = (event) => {
+        const csv = event.target.result;
+        const lines = csv.split("\n");
+        const headers = lines[0].split(",");
 
-              // Combine date and time components
-              const formattedTimestamp = `${formattedDate}, ${formattedTime}`;
-              
-              newData = {
-                timestamp: formattedTimestamp
-              };
-            } else {
-              // For other columns, map them to respective keys
-              newData[i] = columns[i];
-              // const tableKeys = Object.keys(tableData[0] || {}); // Ensure tableData[0] is defined
-              // if (i < tableKeys.length) {
-              //   newData[tableKeys[i]] = columns[i];
-              // }
-            }
-          }
-          return newData;
+        tableData = lines.slice(1).map(line => {
+          const values = line.split(",");
+          const row = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index];
+          });
+          return row;
         });
+
         displayTable();
       };
+
       reader.readAsText(file);
-      this.value = ""; // Reset the value to allow importing the same file again
+    }
+
+    document.getElementById("toggleBtn").addEventListener("click", () => {
+      savingData = !savingData;
+      if (savingData) {
+        startTimer();
+        document.getElementById("toggleBtn").textContent = "Stop Saving Data";
+      } else {
+        clearInterval(timerInterval);
+        clearInterval(saveDataIntervalTimer);
+        document.getElementById("toggleBtn").textContent = "Start Saving Data";
+      }
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      clearInterval(timerInterval);
+      clearInterval(saveDataIntervalTimer);
+      savingData = false;
+      tableData = [];
+      displayTable();
+      document.getElementById("toggleBtn").textContent = "Start Saving Data";
+    });
+
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      exportData();
+    });
+
+    document.getElementById("importBtn").addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        importData(file);
+      }
+    });
+
+    // Sample MQTT connection and data handling
+    const client = mqtt.connect("ws://broker.mqttdashboard.com:8000/mqtt");
+
+    client.on("connect", () => {
+      client.subscribe(topic);
+    });
+
+    client.on("message", (topic, message) => {
+      updateDisplay(message.toString());
     });
   </script>
 </body>
