@@ -158,20 +158,44 @@
     }, 1000);
 }
 
-    function displayTimer() {
-    if (timerSeconds >= 0) {
-        const hours = Math.floor(timerSeconds / 3600);
-        const minutes = Math.floor((timerSeconds % 3600) / 60);
-        const seconds = timerSeconds % 60;
-        timerDisplay.textContent = `Timer: ${hours
-          .toString()
-          .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
-            .toString()
-            .padStart(2, "0")}`;
-    } else {
-        timerDisplay.textContent = "Timer: 00:00:00";
-    }
+    function displaySaveDataIntervalTimer() {
+    const hours = Math.floor(saveDataIntervalTimerSeconds / 3600);
+    const minutes = Math.floor((saveDataIntervalTimerSeconds % 3600) / 60);
+    const seconds = saveDataIntervalTimerSeconds % 60;
+    saveDataIntervalTimerDisplay.textContent = `Interval: ${hours
+      .toString()
+      .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
+        .toString()
+        .padStart(2, "0")}`;
 }
+
+    <div id="timerSection" style="display: flex; align-items: center;">
+    <p id="timerDisplay" style="margin-right: 20px;">00:00:00</p>
+    <p id="saveDataIntervalTimerDisplay">Interval: 00:00:00</p>
+</div>
+
+    function startSaveDataIntervalTimer() {
+    saveDataIntervalTimer = setInterval(function () {
+        saveDataIntervalTimerSeconds++;
+        displaySaveDataIntervalTimer(); // Memperbarui tampilan interval
+        saveData();
+    }, saveDataInterval * 1000);
+}
+    
+//     function displayTimer() {
+//     if (timerSeconds >= 0) {
+//         const hours = Math.floor(timerSeconds / 3600);
+//         const minutes = Math.floor((timerSeconds % 3600) / 60);
+//         const seconds = timerSeconds % 60;
+//         timerDisplay.textContent = `Timer: ${hours
+//           .toString()
+//           .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
+//             .toString()
+//             .padStart(2, "0")}`;
+//     } else {
+//         timerDisplay.textContent = "Timer: 00:00:00";
+//     }
+// }
 
 function updateDisplay(data) {
     const dataArray = data.split(",");
@@ -504,19 +528,21 @@ function updateDisplay(data) {
 
     document
     .getElementById("resetBtn").addEventListener("click", function () {
-    clearInterval(timerInterval); // Menghentikan interval timer utama
-    clearInterval(saveDataIntervalTimer); // Menghentikan interval penyimpanan data
+    clearInterval(timerInterval);
+    clearInterval(saveDataIntervalTimer);
 
-    timerSeconds = 0; // Mengatur ulang waktu
-    saveDataIntervalTimerSeconds = 0; // Mengatur ulang interval penyimpanan
-    displayTimer(); // Menampilkan timer yang direset
+    timerSeconds = 0;
+    saveDataIntervalTimerSeconds = 0; // Mengatur ulang waktu interval
+    displayTimer();
+    displaySaveDataIntervalTimer(); // Menampilkan interval yang direset
 
-    savingData = false; // Menghentikan proses penyimpanan data
-    tableData = []; // Mengosongkan tabel data yang tersimpan
+    savingData = false;
+    tableData = [];
 
-    displayTable(); // Menampilkan tabel yang sudah direset
-    document.getElementById("toggleBtn").textContent = "Start Saving Data"; // Mengatur ulang tombol mulai
+    displayTable();
+    document.getElementById("toggleBtn").textContent = "Start Saving Data";
 });
+
 
       // .getElementById("resetBtn")
       // .addEventListener("click", function () {
