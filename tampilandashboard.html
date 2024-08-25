@@ -175,9 +175,8 @@
             // Start save interval
             if (intervalSeconds > 0) {
                 saveDataIntervalTimer = setInterval(() => {
-                    if (savingData && !hasSaved) {
+                    if (savingData) {
                         saveData();
-                        hasSaved = true;
                     }
                 }, intervalSeconds * 1000);
             }
@@ -208,67 +207,108 @@
             }
         }
 
-        function updateDisplay(data) {
-            const dataArray = data.split(",");
-            const dataGridItems = document.querySelectorAll(".data-item");
-            const dataTableBody = document.querySelector("#dataTable tbody");
+        function saveData() {
+            if (!hasSaved) {
+                // This function can be improved or replaced based on actual data handling requirements
+                const data = "T1=25,T2=30,T3=22,T4=27,T5=29,TM=28,RH=50,FLOW=1.2,NOISE=45"; // Example data
+                const dataArray = data.split(",");
+                const dataGridItems = document.querySelectorAll(".data-item");
+                const dataTableBody = document.querySelector("#dataTable tbody");
 
-            dataGridItems.forEach((item) => (item.textContent = ""));
+                dataGridItems.forEach((item) => (item.textContent = ""));
 
-            const options = {
-                day: 'numeric',
-                month: 'numeric',
-                year: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric',
-                hour12: false, // Use 24-hour format
-            };
+                const options = {
+                    day: 'numeric',
+                    month: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    second: 'numeric',
+                    hour12: false,
+                };
 
-            let newData = { timestamp: new Date().toLocaleString('en-US', options) };
+                let newData = { timestamp: new Date().toLocaleString('en-US', options) };
 
-            dataArray.forEach((item) => {
-                const [label, value] = item.split("=");
-                let unit = "";
+                dataArray.forEach((item) => {
+                    const [label, value] = item.split("=");
+                    let unit = "";
 
-                switch (label) {
-                    case "T1":
-                    case "T2":
-                    case "T3":
-                    case "T4":
-                    case "T5":
-                    case "TM":
-                        unit = "°C";
-                        break;
-                    case "RH":
-                        unit = "%";
-                        break;
-                    case "FLOW":
-                        unit = "m/s";
-                        break;
-                    case "NOISE":
-                        unit = "dB";
-                        break;
-                    default:
-                        break;
-                }
+                    switch (label) {
+                        case "T1":
+                        case "T2":
+                        case "T3":
+                        case "T4":
+                        case "T5":
+                        case "TM":
+                            unit = "°C";
+                            break;
+                        case "RH":
+                            unit = "%";
+                            break;
+                        case "FLOW":
+                            unit = "m/s";
+                            break;
+                        case "NOISE":
+                            unit = "dB";
+                            break;
+                        default:
+                            break;
+                    }
 
-                const dataItem = document.querySelector(
-                    `.data-item[data-label="${label}"]`
-                );
-                if (dataItem) {
-                    dataItem.textContent = `${label} = ${value} ${unit}`;
-                }
+                    const dataItem = document.querySelector(
+                        `.data-item[data-label="${label}"]`
+                    );
+                    if (dataItem) {
+                        dataItem.textContent = `${label} = ${value} ${unit}`;
+                    }
 
-                if (savingData) {
                     newData[label] = parseFloat(value);
-                }
+                });
+
+                tableData.push(newData);
+                displayTable();
+                hasSaved = true;
+            }
+        }
+
+        function displayTable() {
+            const dataTableBody = document.querySelector("#dataTable tbody");
+            dataTableBody.innerHTML = "";
+            tableData.forEach((entry) => {
+                const row = document.createElement("tr");
+                Object.keys(entry).forEach((key) => {
+                    const cell = document.createElement("td");
+                    cell.textContent = entry[key];
+                    row.appendChild(cell);
+                });
+                dataTableBody.appendChild(row);
             });
+        }
 
-            console.log(newData)
-
+        document.getElementById("toggleBtn").addEventListener("click", () => {
+            savingData = !savingData;
             if (savingData) {
-                if (saveDataInterval == 0) {
-                    tableData.push(newData);
-                    displayTable();
-                } else if (saveDataIntervalTimerSeconds % saveDataInterval == 
+                startTimer();
+                document.getElementById("toggleBtn").textContent = "Stop Saving Data";
+                hasSaved = false;
+            } else {
+                clearInterval(timerInterval);
+                clearInterval(saveDataIntervalTimer);
+                document.getElementById("toggleBtn").textContent = "Start Saving Data";
+            }
+        });
+
+        document.getElementById("resetBtn").addEventListener("click", () => {
+            tableData = [];
+            displayTable();
+            document.getElementById("timerDisplay").textContent = "Timer: 00:00:00";
+            document.getElementById("intervalDisplay").textContent = "Interval: Disabled";
+            clearInterval(timerInterval);
+            clearInterval(saveDataIntervalTimer);
+        });
+
+        // Add functionality for export and import buttons if necessary
+    </script>
+</body>
+
+</html>
