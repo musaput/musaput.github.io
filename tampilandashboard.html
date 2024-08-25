@@ -105,12 +105,8 @@
             const [hours, minutes, seconds] = input.split(":").map(Number);
             timerSeconds = hours * 3600 + minutes * 60 + seconds;
 
-            if (document.getElementById("intervalInput").value == null) {
-                saveDataInterval = 0;
-            } else {
-                saveDataInterval = parseInt(document.getElementById("intervalInput").value, 10);
-            }
-            
+            saveDataInterval = parseInt(document.getElementById("intervalInput").value, 10) || 0;
+
             saveDataIntervalTimer = setInterval(() => {
                 hasSaved = false;
                 saveDataIntervalTimerSeconds++;
@@ -293,6 +289,8 @@
                 document.getElementById("toggleBtn").textContent = "Start Saving Data";
                 clearInterval(timerInterval);
                 clearInterval(saveDataIntervalTimer);
+                saveDataIntervalTimer = null;
+                timerInterval = null;
             } else {
                 savingData = true;
                 document.getElementById("toggleBtn").textContent = "Stop Saving Data";
@@ -312,6 +310,7 @@
             savingData = false;
             document.getElementById("toggleBtn").textContent = "Start Saving Data";
 
+            // Clear intervals
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
