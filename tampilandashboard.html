@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MQTT Data Display</title>
     <style>
-        /* Existing styles */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -34,10 +34,8 @@
             background-color: #f2f2f2;
         }
 
-        /* Style for custom file input button */
         #importBtn {
             display: none;
-            /* Hide the default file input */
         }
 
         .import-button {
@@ -58,14 +56,6 @@
             cursor: pointer;
         }
 
-        /* Additional styles for file input button */
-        .import-button:active,
-        .import-button:focus {
-            outline: none;
-            box-shadow: none;
-        }
-
-        /* New styles for timer container */
         #timerContainer {
             display: flex;
             justify-content: space-between;
@@ -90,6 +80,7 @@
         }
     </style>
 </head>
+
 <body>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <div>
@@ -104,8 +95,8 @@
         <label for="timerInput">Set Timer (hh:mm:ss):</label>
         <input type="text" id="timerInput" placeholder="00:05:00" />
         <div id="timerContainer">
-            <div id="timerDisplay"></div>
-            <div id="intervalDisplay"></div>
+            <div id="timerDisplay">Timer: 00:00:00</div>
+            <div id="intervalDisplay">Interval: Disabled</div>
         </div>
         <div class="grid-container" id="dataGrid">
             <!-- Data items will be displayed here -->
@@ -152,6 +143,7 @@
         let hasSaved = false;
         let timerInterval;
         let timerSeconds = 0;
+        let intervalSeconds = 0;
 
         const timerDisplay = document.getElementById("timerDisplay");
         const intervalDisplay = document.getElementById("intervalDisplay");
@@ -161,25 +153,34 @@
             const [hours, minutes, seconds] = input.split(":").map(Number);
             timerSeconds = hours * 3600 + minutes * 60 + seconds;
 
-            saveDataInterval = parseInt(document.getElementById("intervalInput").value) || 0;
+            intervalSeconds = parseInt(document.getElementById("intervalInput").value) || 0;
 
-            saveDataIntervalTimer = setInterval(() => {
-                hasSaved = false;
-                saveDataIntervalTimerSeconds++;
-            }, 1000);
+            // Clear previous intervals
+            clearInterval(timerInterval);
+            clearInterval(saveDataIntervalTimer);
 
+            // Start timer
             timerInterval = setInterval(() => {
                 timerSeconds--;
                 if (timerSeconds <= 0) {
                     clearInterval(timerInterval);
                     clearInterval(saveDataIntervalTimer);
                     savingData = false;
-                    document.getElementById("toggleBtn").textContent =
-                        "Start Saving Data";
+                    document.getElementById("toggleBtn").textContent = "Start Saving Data";
                 }
                 displayTimer();
                 updateIntervalDisplay(); // Update interval display
             }, 1000);
+
+            // Start save interval
+            if (intervalSeconds > 0) {
+                saveDataIntervalTimer = setInterval(() => {
+                    if (savingData && !hasSaved) {
+                        saveData();
+                        hasSaved = true;
+                    }
+                }, intervalSeconds * 1000);
+            }
 
             updateIntervalDisplay(); // Initial update
         }
@@ -200,8 +201,8 @@
         }
 
         function updateIntervalDisplay() {
-            if (saveDataInterval > 0) {
-                intervalDisplay.textContent = `Interval: ${saveDataInterval} seconds`;
+            if (intervalSeconds > 0) {
+                intervalDisplay.textContent = `Interval: ${intervalSeconds} seconds`;
             } else {
                 intervalDisplay.textContent = "Interval: Disabled";
             }
@@ -264,114 +265,10 @@
                 }
             });
 
+            console.log(newData)
+
             if (savingData) {
                 if (saveDataInterval == 0) {
-                    saveDataInterval = 1;
-                }
-                if (!hasSaved) {
                     tableData.push(newData);
-                    hasSaved = true;
-                }
-
-                if (tableData.length > 0) {
-                    dataTableBody.innerHTML = "";
-                    tableData.forEach((data) => {
-                        const row = document.createElement("tr");
-                        Object.values(data).forEach((value) => {
-                            const cell = document.createElement("td");
-                            cell.textContent = value;
-                            row.appendChild(cell);
-                        });
-                        dataTableBody.appendChild(row);
-                    });
-                }
-            }
-        }
-
-        function saveData() {
-            const data = [
-                "T1=23.4",
-                "T2=24.5",
-                "T3=22.1",
-                "T4=25.0",
-                "T5=23.3",
-                "TM=24.0",
-                "RH=60",
-                "FLOW=1.2",
-                "NOISE=45",
-            ].join(",");
-            updateDisplay(data);
-        }
-
-        document.getElementById("toggleBtn").addEventListener("click", () => {
-            if (savingData) {
-                savingData = false;
-                clearInterval(timerInterval);
-                clearInterval(saveDataIntervalTimer);
-                document.getElementById("toggleBtn").textContent = "Start Saving Data";
-            } else {
-                savingData = true;
-                startTimer();
-                document.getElementById("toggleBtn").textContent = "Stop Saving Data";
-            }
-        });
-
-        document.getElementById("resetBtn").addEventListener("click", () => {
-            tableData = [];
-            document.querySelector("#dataTable tbody").innerHTML = "";
-        });
-
-        document.getElementById("exportBtn").addEventListener("click", () => {
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Date,Time,T1,T2,T3,T4,T5,TM,RH,FLOW,NOISE\n";
-            tableData.forEach((row) => {
-                const rowData = Object.values(row).join(",");
-                csvContent += rowData + "\n";
-            });
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "data.csv");
-            document.body.appendChild(link);
-            link.click();
-        });
-
-        document.getElementById("importBtn").addEventListener("change", function (event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    const contents = e.target.result;
-                    const rows = contents.split("\n");
-                    rows.forEach((row) => {
-                        if (row) {
-                            updateDisplay(row);
-                        }
-                    });
-                };
-                reader.readAsText(file);
-            }
-        });
-
-        function connectToMQTT() {
-            const client = mqtt.connect("wss://broker.hivemq.com:8000/mqtt");
-
-            client.on("connect", function () {
-                console.log("Connected to MQTT broker");
-                client.subscribe(topic, function (err) {
-                    if (!err) {
-                        console.log(`Subscribed to topic: ${topic}`);
-                    }
-                });
-            });
-
-            client.on("message", function (topic, message) {
-                const data = message.toString();
-                updateDisplay(data);
-            });
-        }
-
-        connectToMQTT();
-    </script>
-</body>
-</html>
+                    displayTable();
+                } else if (saveDataIntervalTimerSeconds % saveDataInterval == 
