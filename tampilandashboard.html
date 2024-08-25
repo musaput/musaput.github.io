@@ -245,62 +245,40 @@
             console.log("Connection error: ", err);
             client.end();
         });
-        client.on("close", () => {
-            console.log("Connection closed");
-        });
         client.on("connect", () => {
-            console.log("Connected");
+            console.log("Connected to MQTT broker");
             client.subscribe(topic, (err) => {
                 if (!err) {
-                    console.log(`Subscribed to topic ${topic}`);
+                    console.log(`Subscribed to topic: ${topic}`);
                 }
             });
         });
 
         client.on("message", (topic, message) => {
-            const data = message.toString();
-            const jsonData = JSON.parse(data);
-
-            // Update display with MQTT data
-            document.querySelector(`.data-item[data-label="T1"]`).textContent = `T1 = ${jsonData.T1} °C`;
-            document.querySelector(`.data-item[data-label="T2"]`).textContent = `T2 = ${jsonData.T2} °C`;
-            document.querySelector(`.data-item[data-label="T3"]`).textContent = `T3 = ${jsonData.T3} °C`;
-            document.querySelector(`.data-item[data-label="T4"]`).textContent = `T4 = ${jsonData.T4} °C`;
-            document.querySelector(`.data-item[data-label="T5"]`).textContent = `T5 = ${jsonData.T5} °C`;
-            document.querySelector(`.data-item[data-label="TM"]`).textContent = `TM = ${jsonData.TM} °C`;
-            document.querySelector(`.data-item[data-label="RH"]`).textContent = `RH = ${jsonData.RH} %`;
-            document.querySelector(`.data-item[data-label="FLOW"]`).textContent = `FLOW = ${jsonData.FLOW} m/s`;
-            document.querySelector(`.data-item[data-label="NOISE"]`).textContent = `NOISE = ${jsonData.NOISE} dB`;
-
-            // Save data to tableData
-            tableData.push({
-                timestamp: new Date(),
-                T1: jsonData.T1,
-                T2: jsonData.T2,
-                T3: jsonData.T3,
-                T4: jsonData.T4,
-                T5: jsonData.T5,
-                TM: jsonData.TM,
-                RH: jsonData.RH,
-                FLOW: jsonData.FLOW,
-                NOISE: jsonData.NOISE,
-            });
-
-            // Display updated table
+            const data = JSON.parse(message.toString());
+            console.log("Received data:", data);
+            tableData.push(data);
             displayTable();
+
+            if (savingData) {
+                const now = new Date();
+                data.timestamp = now.toISOString();
+                tableData.push(data);
+                displayTable();
+            }
         });
 
-        document.getElementById("toggleBtn").addEventListener("click", function () {
-            if (!savingData) {
-                startTimer();
-            } else {
+        document.getElementById("toggleBtn").addEventListener("click", () => {
+            if (savingData) {
+                savingData = false;
+                document.getElementById("toggleBtn").textContent = "Start Saving Data";
                 clearInterval(timerInterval);
                 clearInterval(intervalInterval);
-                displayTimer();
-                displayInterval();
+            } else {
+                startTimer();
+                savingData = true;
+                document.getElementById("toggleBtn").textContent = "Stop Saving Data";
             }
-            savingData = !savingData;
-            this.textContent = savingData ? "Stop Saving Data" : "Start Saving Data";
         });
 
         document.getElementById("resetBtn").addEventListener("click", () => {
@@ -309,66 +287,39 @@
             timerSeconds = 0;
             intervalCounter = 0;
             displayTimer();
-            displayInterval();
-            tableData = [];
-            document.querySelector("#dataTable tbody").innerHTML = "";
+            updateIntervalDisplay();
         });
 
         document.getElementById("exportBtn").addEventListener("click", () => {
-            const csvContent = "data:text/csv;charset=utf-8," +
-                tableData.map(row => {
-                    const rowArray = [
-                        new Date(row.timestamp).toLocaleDateString(),
-                        new Date(row.timestamp).toLocaleTimeString(),
-                        row.T1,
-                        row.T2,
-                        row.T3,
-                        row.T4,
-                        row.T5,
-                        row.TM,
-                        row.RH,
-                        row.FLOW,
-                        row.NOISE
-                    ];
-                    return rowArray.join(",");
-                }).join("\n");
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "saved_data.csv");
-            document.body.appendChild(link);
-
-            link.click();
+            const csv = tableData.map(row => {
+                return Object.values(row).join(",");
+            }).join("\n");
+            const csvFile = new Blob([csv], { type: "text/csv" });
+            const downloadLink = document.createElement("a");
+            downloadLink.download = "data.csv";
+            downloadLink.href = URL.createObjectURL(csvFile);
+            downloadLink.click();
         });
 
         document.getElementById("importBtn").addEventListener("change", (event) => {
             const file = event.target.files[0];
-            const reader = new FileReader();
-
-            reader.onload = (e) => {
-                const contents = e.target.result;
-                const rows = contents.split("\n");
-                tableData = rows.slice(1).map(row => {
-                    const values = row.split(",");
-                    return {
-                        timestamp: new Date(values[0] + ' ' + values[1]),
-                        T1: parseFloat(values[2]),
-                        T2: parseFloat(values[3]),
-                        T3: parseFloat(values[4]),
-                        T4: parseFloat(values[5]),
-                        T5: parseFloat(values[6]),
-                        TM: parseFloat(values[7]),
-                        RH: parseFloat(values[8]),
-                        FLOW: parseFloat(values[9]),
-                        NOISE: parseFloat(values[10]),
-                    };
-                });
-
-                displayTable();
-            };
-
-            reader.readAsText(file);
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const csv = e.target.result;
+                    const rows = csv.split("\n");
+                    tableData = rows.map(row => {
+                        const values = row.split(",");
+                        const data = {};
+                        values.forEach((value, index) => {
+                            data[`col${index}`] = value;
+                        });
+                        return data;
+                    });
+                    displayTable();
+                };
+                reader.readAsText(file);
+            }
         });
     </script>
 </body>
