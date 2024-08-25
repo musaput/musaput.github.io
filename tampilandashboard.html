@@ -130,122 +130,210 @@
     const timerDisplay = document.getElementById("timerDisplay");
 
     function startTimer() {
-      const input = document.getElementById("timerInput").value;
-      const [hours, minutes, seconds] = input.split(":").map(Number);
-      timerSeconds = hours * 3600 + minutes * 60 + seconds;
+    const input = document.getElementById("timerInput").value;
+    const [hours, minutes, seconds] = input.split(":").map(Number);
+    timerSeconds = hours * 3600 + minutes * 60 + seconds;
 
-      if (document.getElementById("intervalInput").value == null) {
-          saveDataInterval = 0;
-      } else {
-          saveDataInterval = document.getElementById("intervalInput").value;
-      }
-            
-            saveDataIntervalTimer = setInterval(() => {
-                hasSaved = false;
-                saveDataIntervalTimerSeconds++;
-            }, 1000);
+    saveDataInterval = parseInt(document.getElementById("intervalInput").value, 10) || 0; // Default to 0 if not set
+    
+    saveDataIntervalTimerSeconds = 0;
 
-      timerInterval = setInterval(() => {
+    saveDataIntervalTimer = setInterval(() => {
+        saveDataIntervalTimerSeconds++;
+        if (saveDataInterval > 0 && saveDataIntervalTimerSeconds >= saveDataInterval && savingData) {
+            hasSaved = false;
+            saveDataIntervalTimerSeconds = 0; // Reset the interval timer
+        }
+    }, 1000);
+
+    timerInterval = setInterval(() => {
         timerSeconds--;
         if (timerSeconds <= 0) {
-          clearInterval(timerInterval);
-          clearInterval(saveDataIntervalTimer);
-          savingData = false;
-          document.getElementById("toggleBtn").textContent =
-            "Start Saving Data";
+            clearInterval(timerInterval);
+            clearInterval(saveDataIntervalTimer);
+            savingData = false;
+            document.getElementById("toggleBtn").textContent = "Start Saving Data";
         }
         displayTimer();
-      }, 1000);
-    }
+    }, 1000);
+}
 
-    function displayTimer() {
-      if (timerSeconds >= 0) {
-        const hours = Math.floor(timerSeconds / 3600);
-        const minutes = Math.floor((timerSeconds % 3600) / 60);
-        const seconds = timerSeconds % 60;
-        timerDisplay.textContent = `Timer: ${hours
-          .toString()
-          .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
-            .toString()
-            .padStart(2, "0")}`;
-      } else {
-        timerDisplay.textContent = "Timer: 00:00:00";
-      }
-    }
+function updateDisplay(data) {
+    const dataArray = data.split(",");
+    const dataGridItems = document.querySelectorAll(".data-item");
 
-    function updateDisplay(data) {
-      const dataArray = data.split(",");
-      const dataGridItems = document.querySelectorAll(".data-item");
-      const dataTableBody = document.querySelector("#dataTable tbody");
-
-      dataGridItems.forEach((item) => (item.textContent = ""));
-
-      const options = {
+    const options = {
         day: 'numeric',
         month: 'numeric',
         year: 'numeric',
         hour: 'numeric',
         minute: 'numeric',
         second: 'numeric',
-        hour12: false, // Use 24-hour format
-      };
+        hour12: false, 
+    };
 
-      let newData = { timestamp: new Date().toLocaleString('en-US', options) };
+    let newData = { timestamp: new Date().toLocaleString('en-US', options) };
 
-      dataArray.forEach((item) => {
+    dataArray.forEach((item) => {
         const [label, value] = item.split("=");
         let unit = "";
 
         switch (label) {
-          case "T1":
-          case "T2":
-          case "T3":
-          case "T4":
-          case "T5":
-          case "TM":
-            unit = "°C";
-            break;
-          case "RH":
-            unit = "%";
-            break;
-          case "FLOW":
-            unit = "m/s";
-            break;
-          case "NOISE":
-            unit = "dB";
-            break;
-          default:
-            break;
+            case "T1": case "T2": case "T3": case "T4": case "T5": case "TM":
+                unit = "°C";
+                break;
+            case "RH":
+                unit = "%";
+                break;
+            case "FLOW":
+                unit = "m/s";
+                break;
+            case "NOISE":
+                unit = "dB";
+                break;
+            default:
+                break;
         }
 
-        const dataItem = document.querySelector(
-          `.data-item[data-label="${label}"]`
-        );
+        const dataItem = document.querySelector(`.data-item[data-label="${label}"]`);
         if (dataItem) {
-          dataItem.textContent = `${label} = ${value} ${unit}`;
+            dataItem.textContent = `${label} = ${value} ${unit}`;
         }
 
         if (savingData) {
-          newData[label] = parseFloat(value);
+            newData[label] = parseFloat(value);
         }
-      });
+    });
 
-      console.log(newData)
+    if (savingData) {
+        if (saveDataInterval == 0 || saveDataIntervalTimerSeconds == 0) {
+            tableData.push(newData);
+            displayTable();
+        } else if (saveDataIntervalTimerSeconds >= saveDataInterval && !hasSaved) {
+            hasSaved = true;
+            tableData.push(newData);
+            displayTable();
+        }
+    }
+}
+
+    // function startTimer() {
+    //   const input = document.getElementById("timerInput").value;
+    //   const [hours, minutes, seconds] = input.split(":").map(Number);
+    //   timerSeconds = hours * 3600 + minutes * 60 + seconds;
+
+    //   if (document.getElementById("intervalInput").value == null) {
+    //       saveDataInterval = 0;
+    //   } else {
+    //       saveDataInterval = document.getElementById("intervalInput").value;
+    //   }
+            
+    //         saveDataIntervalTimer = setInterval(() => {
+    //             hasSaved = false;
+    //             saveDataIntervalTimerSeconds++;
+    //         }, 1000);
+
+    //   timerInterval = setInterval(() => {
+    //     timerSeconds--;
+    //     if (timerSeconds <= 0) {
+    //       clearInterval(timerInterval);
+    //       clearInterval(saveDataIntervalTimer);
+    //       savingData = false;
+    //       document.getElementById("toggleBtn").textContent =
+    //         "Start Saving Data";
+    //     }
+    //     displayTimer();
+    //   }, 1000);
+    // }
+
+    // function displayTimer() {
+    //   if (timerSeconds >= 0) {
+    //     const hours = Math.floor(timerSeconds / 3600);
+    //     const minutes = Math.floor((timerSeconds % 3600) / 60);
+    //     const seconds = timerSeconds % 60;
+    //     timerDisplay.textContent = `Timer: ${hours
+    //       .toString()
+    //       .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
+    //         .toString()
+    //         .padStart(2, "0")}`;
+    //   } else {
+    //     timerDisplay.textContent = "Timer: 00:00:00";
+    //   }
+    // }
+
+    // function updateDisplay(data) {
+    //   const dataArray = data.split(",");
+    //   const dataGridItems = document.querySelectorAll(".data-item");
+    //   const dataTableBody = document.querySelector("#dataTable tbody");
+
+    //   dataGridItems.forEach((item) => (item.textContent = ""));
+
+    //   const options = {
+    //     day: 'numeric',
+    //     month: 'numeric',
+    //     year: 'numeric',
+    //     hour: 'numeric',
+    //     minute: 'numeric',
+    //     second: 'numeric',
+    //     hour12: false, // Use 24-hour format
+    //   };
+
+    //   let newData = { timestamp: new Date().toLocaleString('en-US', options) };
+
+    //   dataArray.forEach((item) => {
+    //     const [label, value] = item.split("=");
+    //     let unit = "";
+
+    //     switch (label) {
+    //       case "T1":
+    //       case "T2":
+    //       case "T3":
+    //       case "T4":
+    //       case "T5":
+    //       case "TM":
+    //         unit = "°C";
+    //         break;
+    //       case "RH":
+    //         unit = "%";
+    //         break;
+    //       case "FLOW":
+    //         unit = "m/s";
+    //         break;
+    //       case "NOISE":
+    //         unit = "dB";
+    //         break;
+    //       default:
+    //         break;
+    //     }
+
+    //     const dataItem = document.querySelector(
+    //       `.data-item[data-label="${label}"]`
+    //     );
+    //     if (dataItem) {
+    //       dataItem.textContent = `${label} = ${value} ${unit}`;
+    //     }
+
+    //     if (savingData) {
+    //       newData[label] = parseFloat(value);
+    //     }
+    //   });
+
+    //   console.log(newData)
       // console.log("INTERVAL SECONDS " + saveDataIntervalTimerSeconds)
     // console.log("MOD " + saveDataIntervalTimerSeconds % saveDataInterval)
             // console.log("SAVED " + hasSaved)
 
-      if (savingData) {
-        if (saveDataInterval == 0) {
-            tableData.push(newData);
-            displayTable();
-        } else if (saveDataIntervalTimerSeconds % saveDataInterval == 0 && hasSaved == false) {
-          hasSaved = true
-          tableData.push(newData);
-          displayTable();
-                }
-            }
-        }
+      // if (savingData) {
+      //   if (saveDataInterval == 0) {
+      //       tableData.push(newData);
+      //       displayTable();
+      //   } else if (saveDataIntervalTimerSeconds % saveDataInterval == 0 && hasSaved == false) {
+      //     hasSaved = true
+      //     tableData.push(newData);
+      //     displayTable();
+      //           }
+      //       }
+      //   }
 
     function displayTable() {
       const dataTableBody = document.querySelector("#dataTable tbody");
