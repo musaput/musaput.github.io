@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MQTT Data Display</title>
   <style>
+    /* Existing CSS styles */
     .grid-container {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -38,34 +39,46 @@
       display: none;
     }
 
-    .import-button,
-    .button-custom {
+    .import-button {
       padding: 10px 20px;
       background-color: #007bff;
       color: #fff;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      margin-top: 10px;
     }
 
     .import-button:active,
-    .import-button:focus,
-    .button-custom:active,
-    .button-custom:focus {
+    .import-button:focus {
       outline: none;
       box-shadow: none;
     }
 
-    .timer-container {
+    /* New CSS styles */
+    .controls {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin: 20px 0;
+      margin-top: 20px;
     }
 
-    .timer-display {
-      font-size: 1.5em;
-      font-weight: bold;
+    .import-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .timer-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    #timerDisplay,
+    #intervalDisplay {
+      margin-top: 10px;
+      font-size: 16px;
     }
   </style>
 </head>
@@ -74,24 +87,22 @@
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <div>
     <h1>INCUBATOR ANALYZER</h1>
-    <button id="toggleBtn" class="button-custom">Start Saving Data</button>
-    <button id="resetBtn" class="button-custom">Reset Data</button>
-    <button id="exportBtn" class="button-custom">Export Data</button>
-    <input type="file" id="importBtn" accept=".csv" class="import-button" />
-    <label for="importBtn" class="import-button">Import Data</label>
-    <div class="timer-container">
-      <div>
-        <label for="intervalInput">Set Interval (seconds):</label>
-        <input type="text" id="intervalInput" placeholder="30" />
+    <div class="controls">
+      <button id="toggleBtn" class="button-custom">Start Saving Data</button>
+      <button id="resetBtn" class="button-custom">Reset Data</button>
+      <button id="exportBtn" class="button-custom">Export Data</button>
+      <div class="import-controls">
+        <input type="file" id="importBtn" accept=".csv" class="import-button" />
+        <label for="importBtn" class="import-button">Import Data</label>
+        <div class="timer-controls">
+          <label for="intervalInput">Set Interval (seconds):</label>
+          <input type="text" id="intervalInput" placeholder="30" />
+          <label for="timerInput">Set Timer (hh:mm:ss):</label>
+          <input type="text" id="timerInput" placeholder="00:05:00" />
+        </div>
       </div>
-      <div>
-        <label for="timerInput">Set Timer (hh:mm:ss):</label>
-        <input type="text" id="timerInput" placeholder="00:05:00" />
-      </div>
-    </div>
-    <div class="timer-container">
-      <div id="intervalDisplay" class="timer-display">Interval: 00:00:00</div>
-      <div id="timerDisplay" class="timer-display">Timer: 00:00:00</div>
+      <div id="timerDisplay"></div>
+      <div id="intervalDisplay"></div>
     </div>
     <div class="grid-container" id="dataGrid">
       <!-- Data items will be displayed here -->
@@ -129,12 +140,14 @@
     </table>
   </div>
   <script>
+    // JavaScript code remains the same
     const topic = "esp32/bismillah";
     let savingData = false;
     let tableData = [];
     let saveDataInterval = 0;
     let saveDataIntervalTimer = 0;
     let saveDataIntervalTimerSeconds = 0;
+    let hasSaved = false;
     let timerInterval;
     let timerSeconds = 0;
 
@@ -142,17 +155,21 @@
     const intervalDisplay = document.getElementById("intervalDisplay");
 
     function startTimer() {
-      const timerInput = document.getElementById("timerInput").value;
-      const intervalInput = document.getElementById("intervalInput").value;
-      const [hours, minutes, seconds] = timerInput.split(":").map(Number);
+      const input = document.getElementById("timerInput").value;
+      const [hours, minutes, seconds] = input.split(":").map(Number);
       timerSeconds = hours * 3600 + minutes * 60 + seconds;
-      saveDataInterval = parseInt(intervalInput, 10) || 0;
 
+      saveDataInterval = parseInt(document.getElementById("intervalInput").value, 10) || 0;
+      
       saveDataIntervalTimerSeconds = 0;
 
       saveDataIntervalTimer = setInterval(() => {
         saveDataIntervalTimerSeconds++;
-        displayInterval();
+        if (saveDataInterval > 0 && saveDataIntervalTimerSeconds >= saveDataInterval && savingData) {
+          hasSaved = false;
+          saveDataIntervalTimerSeconds = 0;
+        }
+        updateIntervalDisplay();
       }, 1000);
 
       timerInterval = setInterval(() => {
@@ -166,7 +183,7 @@
         displayTimer();
       }, 1000);
     }
-
+    
     function displayTimer() {
       if (timerSeconds >= 0) {
         const hours = Math.floor(timerSeconds / 3600);
@@ -182,19 +199,11 @@
       }
     }
 
-    function displayInterval() {
-      if (saveDataInterval > 0) {
-        const hours = Math.floor(saveDataIntervalTimerSeconds / 3600);
-        const minutes = Math.floor((saveDataIntervalTimerSeconds % 3600) / 60);
-        const seconds = saveDataIntervalTimerSeconds % 60;
-        intervalDisplay.textContent = `Interval: ${hours
-          .toString()
-          .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
-            .toString()
-            .padStart(2, "0")}`;
-      } else {
-        intervalDisplay.textContent = "Interval: 00:00:00";
-      }
+    function updateIntervalDisplay() {
+      const intervalSeconds = saveDataInterval - saveDataIntervalTimerSeconds;
+      const minutes = Math.floor(intervalSeconds / 60);
+      const seconds = intervalSeconds % 60;
+      intervalDisplay.textContent = `Interval: ${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
     }
 
     function updateDisplay(data) {
@@ -208,7 +217,7 @@
         hour: 'numeric',
         minute: 'numeric',
         second: 'numeric',
-        hour12: false, 
+        hour12: false,
       };
 
       let newData = { timestamp: new Date().toLocaleString('en-US', options) };
@@ -234,143 +243,21 @@
             break;
         }
 
-        newData[label] = value.trim() + unit;
-      });
+        const dataItem = document.querySelector(`.data-item[data-label="${label}"]`);
+        if (dataItem) {
+          dataItem.textContent = `${label} = ${value} ${unit}`;
+        }
 
-      dataGridItems.forEach((item) => {
-        const label = item.getAttribute("data-label");
-        if (newData[label]) {
-          item.textContent = `${label} = ${newData[label]}`;
+        if (savingData) {
+          newData[label] = parseFloat(value);
         }
       });
 
       if (savingData) {
-        tableData.push(newData);
-        displayTable();
-      }
-    }
-
-    function displayTable() {
-      const tableBody = document.querySelector("#dataTable tbody");
-      tableBody.innerHTML = "";
-
-      tableData.forEach((data) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${data.timestamp}</td>
-          <td>${data.timestamp}</td>
-          <td>${data.T1 || ""}</td>
-          <td>${data.T2 || ""}</td>
-          <td>${data.T3 || ""}</td>
-          <td>${data.T4 || ""}</td>
-          <td>${data.T5 || ""}</td>
-          <td>${data.TM || ""}</td>
-          <td>${data.RH || ""}</td>
-          <td>${data.FLOW || ""}</td>
-          <td>${data.NOISE || ""}</td>
-        `;
-        tableBody.appendChild(row);
-      });
-    }
-
-    function exportData() {
-      const csvRows = [];
-      const headers = [
-        "Date",
-        "Time",
-        "T1",
-        "T2",
-        "T3",
-        "T4",
-        "T5",
-        "TM",
-        "RH",
-        "FLOW",
-        "NOISE"
-      ];
-      csvRows.push(headers.join(","));
-
-      tableData.forEach((row) => {
-        const values = headers.map(header => row[header] || "");
-        csvRows.push(values.join(","));
-      });
-
-      const csvData = csvRows.join("\n");
-      const blob = new Blob([csvData], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "data.csv";
-      a.click();
-    }
-
-    function importData(file) {
-      const reader = new FileReader();
-
-      reader.onload = (event) => {
-        const csv = event.target.result;
-        const lines = csv.split("\n");
-        const headers = lines[0].split(",");
-
-        tableData = lines.slice(1).map(line => {
-          const values = line.split(",");
-          const row = {};
-          headers.forEach((header, index) => {
-            row[header] = values[index];
-          });
-          return row;
-        });
-
-        displayTable();
-      };
-
-      reader.readAsText(file);
-    }
-
-    document.getElementById("toggleBtn").addEventListener("click", () => {
-      savingData = !savingData;
-      if (savingData) {
-        startTimer();
-        document.getElementById("toggleBtn").textContent = "Stop Saving Data";
-      } else {
-        clearInterval(timerInterval);
-        clearInterval(saveDataIntervalTimer);
-        document.getElementById("toggleBtn").textContent = "Start Saving Data";
-      }
-    });
-
- document.getElementById("resetBtn").addEventListener("click", () => {
-      clearInterval(timerInterval);
-      clearInterval(saveDataIntervalTimer);
-      savingData = false;
-      tableData = [];
-      displayTable();
-      document.getElementById("toggleBtn").textContent = "Start Saving Data";
-    });
-
-    document.getElementById("exportBtn").addEventListener("click", () => {
-      exportData();
-    });
-
-    document.getElementById("importBtn").addEventListener("change", (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        importData(file);
-      }
-    });
-
-    // Sample MQTT connection and data handling
-    const client = mqtt.connect("ws://broker.mqttdashboard.com:8000/mqtt");
-
-    client.on("connect", () => {
-      client.subscribe(topic);
-    });
-
-    client.on("message", (topic, message) => {
-      updateDisplay(message.toString());
-    });
-  </script>
-</body>
-
-</html>
+        if (saveDataInterval == 0 || saveDataIntervalTimerSeconds == 0) {
+          tableData.push(newData);
+          displayTable();
+        } else if (saveDataIntervalTimerSeconds >= saveDataInterval && !hasSaved) {
+          hasSaved = true;
+          tableData.push(newData);
+          displayTable();
