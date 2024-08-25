@@ -65,14 +65,19 @@
 
     .import-controls {
       display: flex;
-      flex-direction: column;
+      align-items: center;
       gap: 10px;
     }
 
     .timer-controls {
       display: flex;
-      flex-direction: column;
-      gap: 5px;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .timer-controls label,
+    .timer-controls input {
+      margin: 0;
     }
 
     #timerDisplay,
@@ -101,9 +106,9 @@
           <input type="text" id="timerInput" placeholder="00:05:00" />
         </div>
       </div>
-      <div id="timerDisplay"></div>
-      <div id="intervalDisplay"></div>
     </div>
+    <div id="timerDisplay"></div>
+    <div id="intervalDisplay"></div>
     <div class="grid-container" id="dataGrid">
       <!-- Data items will be displayed here -->
       <div class="data-item" data-label="T1">T1 = 0 °C</div>
@@ -261,3 +266,92 @@
           hasSaved = true;
           tableData.push(newData);
           displayTable();
+        }
+      }
+    }
+
+    function displayTable() {
+      const tableBody = document.querySelector("#dataTable tbody");
+      tableBody.innerHTML = "";
+      tableData.forEach((row) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.timestamp.split(",")[0]}</td>
+          <td>${row.timestamp.split(",")[1]}</td>
+          <td>${row.T1 || ""}</td>
+          <td>${row.T2 || ""}</td>
+          <td>${row.T3 || ""}</td>
+          <td>${row.T4 || ""}</td>
+          <td>${row.T5 || ""}</td>
+          <td>${row.TM || ""}</td>
+          <td>${row.RH || ""}</td>
+          <td>${row.FLOW || ""}</td>
+          <td>${row.NOISE || ""}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    // Add event listeners for buttons and file input
+    document.getElementById("toggleBtn").addEventListener("click", () => {
+      savingData = !savingData;
+      document.getElementById("toggleBtn").textContent = savingData ? "Stop Saving Data" : "Start Saving Data";
+      if (savingData) {
+        startTimer();
+      } else {
+        clearInterval(timerInterval);
+        clearInterval(saveDataIntervalTimer);
+      }
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      tableData = [];
+      displayTable();
+      document.getElementById("timerDisplay").textContent = "Timer: 00:00:00";
+      document.getElementById("intervalDisplay").textContent = "Interval: 00:00";
+      clearInterval(timerInterval);
+      clearInterval(saveDataIntervalTimer);
+      savingData = false;
+      document.getElementById("toggleBtn").textContent = "Start Saving Data";
+    });
+
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const csvContent = "data:text/csv;charset=utf-8,"
+        + tableData.map(row => [
+          row.timestamp.split(",")[0],
+          row.timestamp.split(",")[1],
+          row.T1 || "",
+          row.T2 || "",
+          row.T3 || "",
+          row.T4 || "",
+          row.T5 || "",
+          row.TM || "",
+          row.RH || "",
+          row.FLOW || "",
+          row.NOISE || ""
+        ].join(",")).join("\n");
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "data.csv");
+      document.body.appendChild(link);
+      link.click();
+    });
+
+    document.getElementById("importBtn").addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target.result;
+          // Handle CSV import
+          console.log(content);
+        };
+        reader.readAsText(file);
+      }
+    });
+  </script>
+</body>
+
+</html>
