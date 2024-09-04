@@ -125,6 +125,7 @@
         let hasSaved = false;
         let timerInterval;
         let timerSeconds = 0;
+        let saveIntervalID = null;
 
         const timerDisplay = document.getElementById("timerDisplay");
 
@@ -139,7 +140,11 @@
 
             saveDataIntervalTimerSeconds = 0; // Reset timer for saving data
 
-            saveDataIntervalTimer = setInterval(() => {
+            // Mulai interval penyimpanan data
+            if (saveIntervalID) {
+                clearInterval(saveIntervalID);
+            }
+            saveIntervalID = setInterval(() => {
                 saveDataIntervalTimerSeconds++;
             }, 1000);
 
@@ -147,7 +152,7 @@
                 timerSeconds--;
                 if (timerSeconds <= 0) {
                     clearInterval(timerInterval);
-                    clearInterval(saveDataIntervalTimer);
+                    clearInterval(saveIntervalID);
                     savingData = false;
                     document.getElementById("toggleBtn").textContent = "Start Saving Data";
                 }
@@ -222,18 +227,16 @@
 
                 if (savingData) {
                     newData[label] = parseFloat(value);
+                    // Save data every saveDataInterval seconds
+                    if (saveDataIntervalTimerSeconds % saveDataInterval === 0 && !hasSaved) {
+                        hasSaved = true;
+                        tableData.push(newData);
+                        displayTable();
+                    } else if (saveDataIntervalTimerSeconds % saveDataInterval !== 0) {
+                        hasSaved = false;
+                    }
                 }
             });
-
-            if (savingData) {
-                if (saveDataIntervalTimerSeconds % saveDataInterval === 0 && !hasSaved) {
-                    hasSaved = true;
-                    tableData.push(newData);
-                    displayTable();
-                } else if (saveDataIntervalTimerSeconds % saveDataInterval !== 0) {
-                    hasSaved = false;
-                }
-            }
         }
 
         function displayTable() {
@@ -253,14 +256,12 @@
                 };
 
                 // Splitting Timestamp into Date and Time
-                const timestamp = new Date(data.timestamp).toLocaleDateString("en-US", options).toString().split(', ');
-                const date = timestamp[0];
-                const time = timestamp[1];
+                const timestamp = new Date(data.timestamp).toLocaleDateString("en-US", options);
+                const time = new Date(data.timestamp).toLocaleTimeString("en-US", options);
 
-                // Creating separate cells for Date and Time
                 const dateCell = document.createElement("td");
+                dateCell.textContent = timestamp;
                 const timeCell = document.createElement("td");
-                dateCell.textContent = date;
                 timeCell.textContent = time;
 
                 row.appendChild(dateCell);
@@ -324,7 +325,7 @@
                 startTimer();
             } else {
                 clearInterval(timerInterval);
-                clearInterval(saveDataIntervalTimer);
+                clearInterval(saveIntervalID);
             }
             savingData = !savingData;
             this.textContent = savingData ? "Stop Saving Data" : "Start Saving Data";
@@ -332,7 +333,7 @@
 
         document.getElementById("resetBtn").addEventListener("click", function () {
             clearInterval(timerInterval);
-            clearInterval(saveDataIntervalTimer);
+            clearInterval(saveIntervalID);
             timerSeconds = 0;
             displayTimer();
             savingData = false;
