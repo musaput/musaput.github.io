@@ -36,17 +36,28 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Set interval untuk pengambilan data
         measurementIntervalId = setInterval(function () {
-        const measurementData = getMeasurementData(); // Ambil data
+        let measurementData = getMeasurementData(); // Ambil data
 
         // Cek apakah semua nilai valid (tidak null/0/NaN)
-        const allValid = Object.values(measurementData).every(value => value !== null && value !== 0 && !isNaN(value));
+        let allValid = Object.values(measurementData).every(value => value !== null && value !== 0 && !isNaN(value));
 
         if (allValid) {
             elapsedTime += intervalSeconds;
             addMeasurementRow(elapsedTime, measurementData);
             saveDataToLocalStorage();
         } else {
-            console.warn("Data tidak valid, menunggu nilai berikutnya...");
+            console.warn("Data tidak valid, mencoba lagi...");
+            // Coba ambil data lagi sebelum interval berikutnya
+            measurementData = getMeasurementData(); // Ambil data lagi
+            allValid = Object.values(measurementData).every(value => value !== null && value !== 0 && !isNaN(value));
+
+            if (allValid) {
+                elapsedTime += intervalSeconds;
+                addMeasurementRow(elapsedTime, measurementData);
+                saveDataToLocalStorage();
+            } else {
+                console.warn("Data tetap tidak valid, menunggu interval berikutnya...");
+            }
         }
     }, intervalSeconds * 1000);
 }
