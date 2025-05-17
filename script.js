@@ -27,13 +27,20 @@ loginButton.addEventListener('click', function() {
     const usernameInput = document.getElementById('username').value;
     const passwordInput = document.getElementById('password').value;
 
-    // Tentukan username dan password yang benar
-    const validUsername = 'admin';
-    const validPassword = 'admin123';
+    // Tentukan username dan password yang benar dalam array atau objek
+    const validCredentials = [
+        { username: 'admin', password: 'admin123' },
+        { username: 'user1', password: 'user1234' },
+        { username: 'user2', password: 'password567' }
+    ];
 
-    // Cek apakah username dan password benar
-    if (usernameInput === validUsername && passwordInput === validPassword) {
-        // Jika benar, redirect ke halaman dashboard
+    // Cek apakah username dan password cocok dengan salah satu pasangan valid
+    const isValid = validCredentials.some(credential => 
+        credential.username === usernameInput && credential.password === passwordInput
+    );
+
+    // Jika valid, redirect ke halaman dashboard
+    if (isValid) {
         window.location.href = 'dashboard.html';
     } else {
         // Jika salah, tampilkan pesan error
