@@ -30,7 +30,7 @@ loginButton.addEventListener('click', function() {
     // Tentukan username dan password yang benar dalam array atau objek
     const validCredentials = [
         { username: 'admin', password: 'admin123' },
-        { username: 'user1', password: 'user1234' },
+        // { username: 'user1', password: 'user1234' },
         { username: 'tiara', password: 'mutiara' }
     ];
 
