@@ -31,7 +31,6 @@ loginButton.addEventListener('click', function() {
     const validCredentials = [
         { username: 'admin', password: 'admin123' },
         { username: 'user1', password: 'user1234' },
-        { username: 'user2', password: 'password567' },
         { username: 'putra', password: 'putraward25' }
     ];
 
